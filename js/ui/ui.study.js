@@ -285,6 +285,49 @@
         }
 
         // ============================================================
+        // FORMATEAR HANZI POR UNIDADES SEMÁNTICAS
+        // ============================================================
+
+        _formatearHanziSegmentado(frase) {
+            if (!frase) return '';
+
+            const idioma = frase.idioma || pipeline?.idiomaObjetivo || 'es';
+            const esJeroglifico = this._esJeroglifico(idioma);
+            const original = frase.segmentacion?.hanzi || frase.original || '';
+
+            if (!esJeroglifico) return original;
+
+            // La fuente ideal son las palabras/unidades semánticas ya generadas.
+            const palabras = Array.isArray(frase.palabras) ? frase.palabras : [];
+            if (!palabras.length) return original;
+
+            const unidades = palabras.map(p => {
+                if (typeof p === 'string') return p.trim();
+                return String(p?.hanzi || p?.palabra || '').trim();
+            }).filter(Boolean);
+
+            if (!unidades.length) return original;
+
+            // Separamos las unidades con un espacio visual, pero pegamos
+            // la puntuación a la unidad anterior: 我 喜欢 这个 咖啡馆。
+            const resultado = [];
+            const puntuacion = /^[，。！？；：、,.!?;:）》）】』」”’]+$/;
+
+            for (const unidad of unidades) {
+                if (puntuacion.test(unidad) && resultado.length) {
+                    resultado[resultado.length - 1] += unidad;
+                } else {
+                    resultado.push(unidad);
+                }
+            }
+
+            return resultado.map((unidad, i) => {
+                const esPuntuacion = /^[，。！？；：、,.!?;:）》）】』」”’]+$/.test(unidad);
+                return `<span style="display:inline-block;margin-right:${i < resultado.length - 1 && !esPuntuacion ? '0.28em' : '0'};">${unidad}</span>`;
+            }).join('');
+        }
+
+        // ============================================================
         // RENDERIZAR TRANSCRIPCIÓN
         // ============================================================
 
@@ -1448,18 +1491,19 @@
                             letter-spacing: ${esJeroglifico ? '2px' : '0px'};
                             padding: 4px 0;
                         ">
-                            ${modoData.mostrar || frase.original}
+                            ${esJeroglifico && !isInverso ? this._formatearHanziSegmentado(frase) : (modoData.mostrar || frase.original)}
                         </div>
                         
                         <!-- TRANSCRIPCIÓN -->
                         ${transcripcion ? `
                             <div style="
-                                font-size:16px;
+                                font-size:24px;
                                 color: ${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};
-                                margin-top:6px;
-                                letter-spacing:1.5px;
-                                font-weight:500;
-                                padding:6px 18px;
+                                margin-top:8px;
+                                letter-spacing:2.2px;
+                                font-weight:700;
+                                line-height:1.35;
+                                padding:8px 18px;
                                 background: ${esJeroglifico ? 'var(--primary)06' : 'var(--secondary)06'};
                                 border-radius:12px;
                                 display:inline-block;
@@ -1492,9 +1536,7 @@
                                         </div>
                                     ` : ''}
                                 ` : `
-                                    <div style="font-size:13px;color:var(--gray-light);padding:6px 0;">
-                                        👆 Haz clic en "Mostrar" para ver la traducción
-                                    </div>
+                                    <div style="height:4px;"></div>
                                 `}
                             </div>
                         ` : modo === 'escritura' ? `
