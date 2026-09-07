@@ -1,18 +1,18 @@
 // ============================================================
-// UI STUDY v23.9 - CORREGIDO: DETECCIÓN DE ORIGEN "TONOS" Y REDIRECCIÓN
+// UI STUDY v24.1 - DISEÑO INMERSIVO REPARADO
 // ============================================================
 
 (function() {
     'use strict';
     
-    if (window.UIStudy && window.UIStudy._version === '23.9') {
+    if (window.UIStudy && window.UIStudy._version === '24.1') {
         console.log('⚠️ UIStudy ya está cargado, saltando...');
         return;
     }
 
     class UIStudy {
         constructor() {
-            this._version = '23.9';
+            this._version = '24.1';
             this._modoEstudio = 'flashcard';
             this._pistaActual = '';
             this._opcionesMultiple = [];
@@ -64,6 +64,60 @@
             // 🔥 CONTROL DE PROGRESO
             this._ultimaActualizacionProgreso = 0;
             this._progresoRecargado = false;
+            
+            // 🔥 REFERENCIA A SÍ MISMO PARA EVENTOS
+            this._self = this;
+        }
+
+        // ============================================================
+        // MÉTODO PÚBLICO PARA CAMBIAR MODO DE ESTUDIO
+        // ============================================================
+
+        cambiarModoEstudio(modo) {
+            try {
+                if (!modo) return;
+                this._modoEstudio = modo;
+                this._resetearEstadoFrase();
+                
+                // Actualizar botones visualmente
+                document.querySelectorAll('.modo-btn').forEach(btn => {
+                    const isActive = btn.dataset.modo === modo;
+                    btn.classList.toggle('active', isActive);
+                    btn.style.background = isActive ? 'var(--primary)' : 'var(--bg)';
+                    btn.style.color = isActive ? 'white' : 'var(--gray)';
+                    btn.style.borderColor = isActive ? 'var(--primary)' : 'var(--light)';
+                    btn.style.boxShadow = isActive ? '0 2px 12px rgba(108,92,231,0.3)' : 'none';
+                });
+                
+                if (this.core) {
+                    this.core.mostrarToast('🔄 Modo: ' + this._getModoNombre(modo), 'info');
+                }
+                
+                // Re-renderizar si hay frase activa
+                if (pipeline && pipeline.fraseActual && this._modoVista === 'frase') {
+                    this._renderizarFraseInteractiva();
+                }
+            } catch (e) {
+                console.warn('⚠️ Error cambiando modo:', e);
+            }
+        }
+
+        _getModoNombre(modo) {
+            const nombres = { 
+                'flashcard': 'Flashcard', 
+                'escritura': 'Escritura', 
+                'multiple': 'Opción Múltiple', 
+                'escucha': 'Escucha' 
+            };
+            return nombres[modo] || modo;
+        }
+
+        _resetearEstadoFrase() {
+            this._mostrandoRespuesta = false;
+            this._ultimaRespuesta = null;
+            this._pistaActual = '';
+            this._opcionesMultiple = [];
+            this._metodoValidacion = 'offline';
         }
 
         // ============================================================
@@ -436,7 +490,6 @@
                     } else {
                         pipeline.cargarFrase(0);
                     }
-                    this._mostrarControlesModo();
                 } else {
                     this.mostrarPantallaInicio();
                 }
@@ -444,82 +497,6 @@
                 console.error('❌ Error en cargar:', e);
                 this.mostrarPantallaInicio();
             }
-        }
-
-        // ============================================================
-        // CONTROLES DE MODO
-        // ============================================================
-
-        _mostrarControlesModo() {
-            try {
-                const container = document.querySelector('.study-controls');
-                if (!container) return;
-                if (document.querySelector('.modo-selector')) return;
-                const modoHTML = `
-                    <div class="modo-selector" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;justify-content:center;">
-                        <button class="modo-btn ${this._modoEstudio === 'flashcard' ? 'active' : ''}" data-modo="flashcard" style="padding:4px 12px;border-radius:16px;border:2px solid var(--light);background:${this._modoEstudio === 'flashcard' ? 'var(--primary)' : 'var(--white)'};color:${this._modoEstudio === 'flashcard' ? 'white' : 'var(--dark)'};cursor:pointer;font-size:11px;font-weight:600;transition:all 0.3s;">
-                            <i class="fas fa-layer-group"></i> Flashcard
-                        </button>
-                        <button class="modo-btn ${this._modoEstudio === 'escritura' ? 'active' : ''}" data-modo="escritura" style="padding:4px 12px;border-radius:16px;border:2px solid var(--light);background:${this._modoEstudio === 'escritura' ? 'var(--primary)' : 'var(--white)'};color:${this._modoEstudio === 'escritura' ? 'white' : 'var(--dark)'};cursor:pointer;font-size:11px;font-weight:600;transition:all 0.3s;">
-                            <i class="fas fa-keyboard"></i> Escritura
-                        </button>
-                        <button class="modo-btn ${this._modoEstudio === 'multiple' ? 'active' : ''}" data-modo="multiple" style="padding:4px 12px;border-radius:16px;border:2px solid var(--light);background:${this._modoEstudio === 'multiple' ? 'var(--primary)' : 'var(--white)'};color:${this._modoEstudio === 'multiple' ? 'white' : 'var(--dark)'};cursor:pointer;font-size:11px;font-weight:600;transition:all 0.3s;">
-                            <i class="fas fa-list-ul"></i> Múltiple
-                        </button>
-                        <button class="modo-btn ${this._modoEstudio === 'escucha' ? 'active' : ''}" data-modo="escucha" style="padding:4px 12px;border-radius:16px;border:2px solid var(--light);background:${this._modoEstudio === 'escucha' ? 'var(--primary)' : 'var(--white)'};color:${this._modoEstudio === 'escucha' ? 'white' : 'var(--dark)'};cursor:pointer;font-size:11px;font-weight:600;transition:all 0.3s;">
-                            <i class="fas fa-volume-up"></i> Escucha
-                        </button>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforebegin', modoHTML);
-                this._configurarModosEstudio();
-            } catch (e) {
-                console.warn('⚠️ Error mostrando controles de modo:', e);
-            }
-        }
-
-        _configurarModosEstudio() {
-            try {
-                document.querySelectorAll('.modo-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const modo = btn.dataset.modo;
-                        if (modo) this.cambiarModoEstudio(modo);
-                    });
-                });
-            } catch (e) {
-                console.warn('⚠️ Error configurando modos:', e);
-            }
-        }
-
-        cambiarModoEstudio(modo) {
-            try {
-                this._modoEstudio = modo;
-                this._resetearEstadoFrase();
-                document.querySelectorAll('.modo-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.modo === modo);
-                    btn.style.background = btn.dataset.modo === modo ? 'var(--primary)' : 'var(--white)';
-                    btn.style.color = btn.dataset.modo === modo ? 'white' : 'var(--dark)';
-                });
-                this.core.mostrarToast('🔄 Modo: ' + this._getModoNombre(modo), 'info');
-                if (pipeline && pipeline.fraseActual && this._modoVista === 'frase') {
-                    this._renderizarFraseInteractiva();
-                }
-            } catch (e) {
-                console.warn('⚠️ Error cambiando modo:', e);
-            }
-        }
-
-        _getModoNombre(modo) {
-            const nombres = { 'flashcard': 'Flashcard', 'escritura': 'Escritura', 'multiple': 'Opción Múltiple', 'escucha': 'Escucha' };
-            return nombres[modo] || modo;
-        }
-
-        _resetearEstadoFrase() {
-            this._mostrandoRespuesta = false;
-            this._ultimaRespuesta = null;
-            this._pistaActual = '';
-            this._opcionesMultiple = [];
-            this._metodoValidacion = 'offline';
         }
 
         // ============================================================
@@ -1239,15 +1216,11 @@
         }
 
         // ============================================================
-        // RENDERIZADO PRINCIPAL - CORREGIDO CON PROGRESO ACTUALIZADO
+        // RENDERIZADO PRINCIPAL - DISEÑO INMERSIVO CON MODO MÚLTIPLE CORREGIDO
         // ============================================================
-        
+
         async _renderizarFraseInteractiva() {
-            if (this._renderizando) {
-                console.log('⏳ Renderizado en curso, saltando...');
-                return;
-            }
-            
+            if (this._renderizando) return;
             if (this._renderTimeout) {
                 clearTimeout(this._renderTimeout);
                 this._renderTimeout = null;
@@ -1261,15 +1234,12 @@
             
             try {
                 const container = document.getElementById('cardContainer');
-                if (!container || !pipeline || !pipeline.fraseActual) {
+                if (!container || !pipeline?.fraseActual) {
                     this._renderizando = false;
                     return;
                 }
 
                 await this._recargarProgresoCompleto();
-
-                container.innerHTML = '';
-                
                 await this._cargarHistoriaCompletaContexto();
                 
                 const frase = pipeline.fraseActual;
@@ -1277,18 +1247,18 @@
                 const rcn = progreso.rcn || 0;
                 const fase = pipeline.fases.find(f => f.id === pipeline.faseActual);
                 const esJeroglifico = frase.esJeroglifico || false;
-                const semaforo = rcn <= 0 ? '🔴' : rcn < 3 ? '🟡' : rcn < 4 ? '🟢' : '🟣';
                 const modo = this._modoEstudio;
-                const consolidacion = pipeline._calcularConsolidacion ? pipeline._calcularConsolidacion(frase) : 0;
-                const total = pipeline.frases ? pipeline.frases.length : 0;
+                const total = pipeline.frases?.length || 0;
                 const actual = (pipeline.indiceFrase !== undefined) ? pipeline.indiceFrase + 1 : 0;
                 
+                // Datos de modo inverso
                 let modoData = { mostrar: frase.original, ocultar: frase.traduccion, esInverso: false };
                 if (window.modoInverso) {
                     modoData = window.modoInverso.getFraseParaEstudio(frase);
                 }
                 const isInverso = modoData.esInverso;
                 
+                // Transcripción
                 let transcripcion = '';
                 try {
                     if (esJeroglifico) {
@@ -1298,6 +1268,7 @@
                     }
                 } catch (e) { transcripcion = ''; }
                 
+                // Favorito
                 let esFavorita = false;
                 try {
                     if (window.gestorFavoritos) {
@@ -1306,195 +1277,653 @@
                     }
                 } catch (e) { esFavorita = false; }
                 
-                const nivelReal = this._obtenerNivelRealUsuario();
-                const familiaSemantica = frase.familiaSemantica || 'sin_clasificar';
-                
-                let html = '<div class="card interactive-card" style="max-width:600px;margin:0 auto;position:relative;">';
-                
-                const origen = this._origenHistoriaActual || pipeline.getOrigenHistoriaActual ? pipeline.getOrigenHistoriaActual() : null;
-                
-                let esCruzada = false;
-                let esTono = false;
+                // Origen
+                const origen = this._origenHistoriaActual || pipeline.getOrigenHistoriaActual?.() || null;
+                let esCruzada = false, esTono = false;
                 try {
                     const historia = await db.get('historias', pipeline._historiaIdActual);
-                    if (historia && historia._esOndaCruzada === true) {
-                        esCruzada = true;
-                    }
-                    if (historia && historia._esTono === true) {
-                        esTono = true;
+                    if (historia) {
+                        esCruzada = historia._esOndaCruzada === true;
+                        esTono = historia._esTono === true;
                     }
                 } catch (e) {}
                 
-                html += `
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-                        <div class="card-badge" style="margin:0;">${fase ? fase.icono + ' ' + fase.nombre : 'Fase ' + pipeline.faseActual}</div>
-                        <div style="display:flex;gap:8px;align-items:center;">
+                // 🔥 COLORES DINÁMICOS SEGÚN RCN
+                const rcnColor = rcn >= 4 ? '#00B894' : rcn >= 2 ? '#FDCB6E' : '#FF7675';
+                const rcnIcono = rcn >= 4 ? '🟣' : rcn >= 3 ? '🟢' : rcn >= 2 ? '🟡' : '🔴';
+                const rcnLabel = rcn >= 4 ? '¡Dominado!' : rcn >= 3 ? 'Consolidado' : rcn >= 2 ? 'En progreso' : 'Necesita práctica';
+                
+                // 🔥 ETIQUETA DE ORIGEN
+                let origenBadge = '';
+                if (origen === 'elipse') origenBadge = '<span class="origen-badge elipse">🌌 Elipse</span>';
+                else if (origen === 'cruzada' || esCruzada) origenBadge = '<span class="origen-badge cruzada">🌊 Cruzada</span>';
+                else if (origen === 'tonos' || esTono) origenBadge = '<span class="origen-badge tonos">🎵 Tonos</span>';
+                else if (origen === 'tema') origenBadge = '<span class="origen-badge tema">📚 Tema</span>';
+                
+                // ============================================================
+                // CONSTRUCCIÓN DEL HTML - DISEÑO INMERSIVO
+                // ============================================================
+                
+                let html = `
+                <div class="study-card" style="
+                    background: var(--white);
+                    border-radius: 24px;
+                    padding: 24px 20px 20px;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+                    border: 1px solid rgba(108,92,231,0.08);
+                    position: relative;
+                    overflow: hidden;
+                    font-family: var(--font);
+                ">
+                    <!-- DECORACIÓN DE FONDO -->
+                    <div style="
+                        position: absolute;
+                        top: -60px;
+                        right: -60px;
+                        width: 200px;
+                        height: 200px;
+                        border-radius: 50%;
+                        background: radial-gradient(circle, rgba(108,92,231,0.04), transparent 70%);
+                        pointer-events: none;
+                    "></div>
+                    <div style="
+                        position: absolute;
+                        bottom: -80px;
+                        left: -80px;
+                        width: 250px;
+                        height: 250px;
+                        border-radius: 50%;
+                        background: radial-gradient(circle, rgba(0,184,148,0.04), transparent 70%);
+                        pointer-events: none;
+                    "></div>
+                    
+                    <!-- ===== CABECERA ===== -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1;flex-wrap:wrap;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span class="fase-badge" style="
+                                display:inline-flex;align-items:center;gap:4px;
+                                padding:4px 14px;
+                                border-radius:20px;
+                                background: linear-gradient(135deg, var(--primary)12, var(--secondary)12);
+                                color: var(--primary);
+                                font-size:12px;
+                                font-weight:700;
+                                border:1px solid var(--primary)20;
+                            ">
+                                ${fase ? fase.icono + ' ' + fase.nombre : 'Fase ' + pipeline.faseActual}
+                            </span>
+                            
+                            <span class="rcn-badge" style="
+                                display:inline-flex;align-items:center;gap:4px;
+                                padding:4px 12px;
+                                border-radius:20px;
+                                background: ${rcnColor}15;
+                                color: ${rcnColor};
+                                font-size:12px;
+                                font-weight:600;
+                                border:1px solid ${rcnColor}30;
+                            ">
+                                ${rcnIcono} RCN ${rcn.toFixed(1)} · ${rcnLabel}
+                            </span>
+                            
+                            ${origenBadge}
+                        </div>
+                        
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <!-- CORAZÓN FAVORITO -->
+                            <button class="favorito-btn" onclick="window.UIStudy._toggleFraseFavorita(${frase.id || 0}, !${esFavorita})" style="
+                                background:none;
+                                border:none;
+                                font-size:24px;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                padding:0 4px;
+                                line-height:1;
+                                ${esFavorita ? 'color:#FF6B6B;' : 'color:var(--gray-light);'}
+                                transform: ${esFavorita ? 'scale(1.1)' : 'scale(1)'};
+                            " onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='${esFavorita ? 'scale(1.1)' : 'scale(1)'}'">
+                                ${esFavorita ? '❤️' : '🤍'}
+                            </button>
+                            
+                            <!-- BOTÓN HISTORIA -->
                             ${this._historiaActual.length > 0 ? `
-                                <button class="btn-secondary" onclick="window.UIStudy._abrirHistoriaCompleta()" 
-                                        style="padding:2px 10px;font-size:10px;background:var(--secondary);color:white;border:none;border-radius:4px;cursor:pointer;">
-                                    <i class="fas fa-book"></i> Ver Historia (${this._historiaActual.length})
+                                <button class="historia-btn" onclick="window.UIStudy._abrirHistoriaCompleta()" style="
+                                    background:var(--bg);
+                                    border:none;
+                                    border-radius:12px;
+                                    padding:6px 12px;
+                                    font-size:12px;
+                                    font-weight:600;
+                                    color:var(--gray);
+                                    cursor:pointer;
+                                    transition:all 0.3s;
+                                    display:flex;
+                                    align-items:center;
+                                    gap:4px;
+                                " onmouseover="this.style.background='var(--primary)08';this.style.color='var(--primary)'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--gray)'">
+                                    📖 <span style="font-size:10px;background:var(--primary);color:white;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">${this._historiaActual.length}</span>
                                 </button>
                             ` : ''}
-                            <div style="font-size:14px;font-weight:600;color:${rcn >= 4 ? 'var(--success)' : rcn >= 2 ? 'var(--warning)' : 'var(--danger)'};">${semaforo} RCN: ${rcn.toFixed(1)}</div>
-                            ${origen === 'elipse' ? `
-                                <span style="font-size:10px;color:var(--primary);background:var(--primary)08;padding:2px 10px;border-radius:12px;">🌌 Elipse</span>
-                            ` : origen === 'cruzada' || esCruzada ? `
-                                <span style="font-size:10px;color:#00CEC9;background:#00CEC908;padding:2px 10px;border-radius:12px;">🌊 Cruzada</span>
-                            ` : origen === 'tonos' || esTono ? `
-                                <span style="font-size:10px;color:#FDCB6E;background:#FDCB6E08;padding:2px 10px;border-radius:12px;">🎵 Tonos</span>
-                            ` : origen === 'tema' ? `
-                                <span style="font-size:10px;color:var(--secondary);background:var(--secondary)08;padding:2px 10px;border-radius:12px;">📚 Tema</span>
-                            ` : ''}
                         </div>
                     </div>
-                `;
-                
-                html += '<div style="height:4px;background:var(--light-gray);border-radius:2px;overflow:hidden;margin-bottom:16px;">';
-                html += '<div style="height:100%;width:' + Math.min(100, consolidacion * 100) + '%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:2px;transition:width 0.5s ease;"></div>';
-                html += '</div>';
-                
-                if (this._progresoMostrado > 0 && this._progresoMostrado < 100) {
-                    html += `
-                        <div style="margin-bottom:10px;">
+                    
+                    <!-- ===== PROGRESO DE HISTORIA ===== -->
+                    ${this._progresoMostrado > 0 && this._progresoMostrado < 100 ? `
+                        <div style="margin-bottom:14px;position:relative;z-index:1;">
                             <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray);margin-bottom:2px;">
                                 <span>📖 Progreso de la historia</span>
-                                <span>${this._progresoMostrado}%</span>
+                                <span style="font-weight:700;color:var(--primary);">${this._progresoMostrado}%</span>
                             </div>
-                            <div style="height:3px;background:var(--bg);border-radius:2px;overflow:hidden;">
-                                <div class="progress-bar-inline" style="height:100%;width:${this._progresoMostrado}%;background:linear-gradient(90deg,var(--primary),var(--success));border-radius:2px;transition:width 0.5s ease;"></div>
+                            <div style="height:4px;background:var(--bg);border-radius:4px;overflow:hidden;">
+                                <div class="progress-bar-inline" style="height:100%;width:${this._progresoMostrado}%;background:linear-gradient(90deg,var(--primary),var(--success));border-radius:4px;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);"></div>
                             </div>
                         </div>
-                    `;
-                }
-                
-                if (isInverso) {
-                    html += `<div style="text-align:center;font-size:11px;color:var(--secondary);margin-bottom:8px;padding:4px 12px;background:var(--secondary)15;border-radius:12px;border:1px solid var(--secondary)30;">
-                        🔄 Modo Inverso: ${window.modoInverso ? window.modoInverso.getTooltip() : 'Traduces al idioma objetivo'}
-                    </div>`;
-                }
-                
-                html += '<div style="text-align:center;margin-bottom:16px;">';
-                
-                if (modo === 'flashcard') {
-                    if (isInverso && esJeroglifico) {
-                        html += `<div style="font-size:18px;color:var(--gray);margin-bottom:8px;">${modoData.mostrar}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, true);
-                    } else if (esJeroglifico) {
-                        const hanzi = frase.segmentacion?.hanzi || frase.original || '';
-                        html += `<div style="font-size:32px;font-weight:700;line-height:1.6;letter-spacing:2px;color:var(--dark);">${hanzi}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, true);
-                    } else {
-                        html += `<div style="font-size:24px;font-weight:700;color:var(--dark);">${modoData.mostrar}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, false);
-                    }
-                    if (this._mostrandoRespuesta) {
-                        html += `<div style="margin-top:12px;padding:12px;background:rgba(108,92,231,0.06);border-radius:10px;font-size:16px;color:var(--primary);">${modoData.ocultar}</div>`;
-                        if (esJeroglifico && modoData.pistaFonetica) {
-                            html += `<div style="font-size:13px;color:var(--gray-light);margin-top:8px;">🔊 ${modoData.pistaFonetica}</div>`;
-                        }
-                        html += '<div style="margin-top:12px;font-size:13px;color:var(--gray);">💡 ' + (this._pistaActual || '') + '</div>';
-                    } else {
-                        html += `<div style="font-size:13px;color:var(--gray-light);margin-top:12px;">👆 Haz clic en "Mostrar" para ver la traducción</div>`;
-                    }
-                } else if (modo === 'escritura') {
-                    if (isInverso && esJeroglifico) {
-                        html += `<div style="font-size:18px;color:var(--gray);margin-bottom:8px;">${modoData.mostrar}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, true);
-                    } else if (esJeroglifico) {
-                        const hanzi = frase.segmentacion?.hanzi || frase.original || '';
-                        html += `<div style="font-size:32px;font-weight:700;line-height:1.6;letter-spacing:2px;color:var(--dark);">${hanzi}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, true);
-                        html += `<div style="font-size:13px;color:var(--gray-light);margin-top:4px;">📝 Escribe la traducción al español</div>`;
-                    } else {
-                        html += `<div style="font-size:24px;font-weight:700;color:var(--dark);">${modoData.mostrar}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, false);
-                        html += `<div style="font-size:13px;color:var(--gray-light);margin-top:4px;">📝 Escribe la traducción</div>`;
-                    }
-                } else if (modo === 'multiple') {
-                    if (isInverso) {
-                        html += `<div style="font-size:24px;font-weight:700;color:var(--dark);">${frase.traduccion}</div>`;
-                    } else if (esJeroglifico) {
-                        const hanzi = frase.segmentacion?.hanzi || frase.original || '';
-                        html += `<div style="font-size:32px;font-weight:700;line-height:1.6;letter-spacing:2px;color:var(--dark);">${hanzi}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, true);
-                    } else {
-                        html += `<div style="font-size:24px;font-weight:700;color:var(--dark);">${frase.original}</div>`;
-                        if (transcripcion) html += this._renderizarTranscripcion(transcripcion, false);
-                    }
-                } else if (modo === 'escucha') {
-                    const textoEscucha = isInverso ? modoData.ocultar : modoData.mostrar;
-                    if (esJeroglifico) {
-                        const hanzi = frase.segmentacion?.hanzi || frase.original || '';
-                        html += `<div style="font-size:32px;font-weight:700;line-height:1.6;letter-spacing:2px;color:var(--dark);">${hanzi}</div>`;
-                        html += `<div style="font-size:15px;color:var(--primary);margin-top:4px;letter-spacing:1px;font-weight:500;padding:4px 14px;background:var(--primary)08;border-radius:8px;display:inline-block;border:1px solid var(--primary)30;font-family:var(--font);">
-                            🔊 ${transcripcion || 'Sin pinyin disponible'}
-                        </div>`;
-                        html += `<div style="font-size:13px;color:var(--gray-light);margin-top:4px;">👂 Escucha la pronunciación y repite</div>`;
-                    } else {
-                        html += `<div style="font-size:24px;font-weight:700;color:var(--dark);">${textoEscucha}</div>`;
-                        html += `<div style="font-size:15px;color:var(--secondary);margin-top:4px;letter-spacing:1px;font-weight:500;padding:4px 14px;background:var(--secondary)08;border-radius:8px;display:inline-block;border:1px solid var(--secondary)30;font-family:var(--font);">
-                            🎤 ${transcripcion || 'Sin transcripción disponible'}
-                        </div>`;
-                        html += `<div style="font-size:13px;color:var(--gray-light);margin-top:4px;">👂 Escucha la pronunciación y repite</div>`;
-                    }
-                }
-                
-                html += '</div>';
-                
-                html += `
-                    <div style="display:flex;justify-content:center;margin-bottom:12px;">
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--gray);padding:4px 12px;border-radius:16px;background:var(--bg);border:1px solid var(--light);">
-                            <input type="checkbox" ${esFavorita ? 'checked' : ''} 
-                                   onchange="window.UIStudy._toggleFraseFavorita(${frase.id || 0}, this.checked)" 
-                                   style="width:16px;height:16px;cursor:pointer;">
-                            <span>⭐ Guardar en Mi Espacio</span>
-                            <span style="font-size:10px;color:var(--gray-light);">(${nivelReal} → ${familiaSemantica})</span>
-                        </label>
+                    ` : ''}
+                    
+                    <!-- ===== FRASE PRINCIPAL ===== -->
+                    <div class="frase-container" style="
+                        text-align:center;
+                        padding:20px 12px 16px;
+                        position:relative;
+                        z-index:1;
+                        background: linear-gradient(135deg, var(--bg), var(--white));
+                        border-radius:16px;
+                        border:1px solid var(--light);
+                        margin-bottom:16px;
+                    ">
+                        ${isInverso ? `
+                            <div style="font-size:13px;color:var(--secondary);margin-bottom:8px;font-weight:600;letter-spacing:0.5px;">
+                                🔄 Modo Inverso · Traduce al idioma objetivo
+                            </div>
+                        ` : ''}
+                        
+                        <!-- FRASE PRINCIPAL (GRANDE) -->
+                        <div style="
+                            font-size: ${esJeroglifico ? '34px' : '26px'};
+                            font-weight: ${esJeroglifico ? '700' : '700'};
+                            color: var(--dark);
+                            line-height: 1.4;
+                            letter-spacing: ${esJeroglifico ? '2px' : '0px'};
+                            padding: 4px 0;
+                        ">
+                            ${modoData.mostrar || frase.original}
+                        </div>
+                        
+                        <!-- TRANSCRIPCIÓN -->
+                        ${transcripcion ? `
+                            <div style="
+                                font-size:16px;
+                                color: ${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};
+                                margin-top:6px;
+                                letter-spacing:1.5px;
+                                font-weight:500;
+                                padding:6px 18px;
+                                background: ${esJeroglifico ? 'var(--primary)06' : 'var(--secondary)06'};
+                                border-radius:12px;
+                                display:inline-block;
+                                border:1px solid ${esJeroglifico ? 'var(--primary)20' : 'var(--secondary)20'};
+                                font-family: var(--font);
+                            ">
+                                ${esJeroglifico ? '🔊' : '🎤'} ${transcripcion}
+                            </div>
+                        ` : ''}
+                        
+                        <!-- TRADUCCIÓN (REVELABLE) -->
+                        ${modo === 'flashcard' ? `
+                            <div style="margin-top:12px;">
+                                ${this._mostrandoRespuesta ? `
+                                    <div style="
+                                        padding:14px 20px;
+                                        background: var(--primary)06;
+                                        border-radius:12px;
+                                        font-size:18px;
+                                        font-weight:600;
+                                        color: var(--primary);
+                                        border:2px dashed var(--primary)30;
+                                        animation: fadeUp 0.3s ease;
+                                    ">
+                                        ${modoData.ocultar}
+                                    </div>
+                                    ${this._pistaActual ? `
+                                        <div style="margin-top:8px;font-size:13px;color:var(--gray);background:var(--bg);padding:6px 14px;border-radius:8px;display:inline-block;">
+                                            💡 ${this._pistaActual}
+                                        </div>
+                                    ` : ''}
+                                ` : `
+                                    <div style="font-size:13px;color:var(--gray-light);padding:6px 0;">
+                                        👆 Haz clic en "Mostrar" para ver la traducción
+                                    </div>
+                                `}
+                            </div>
+                        ` : modo === 'escritura' ? `
+                            <div style="margin-top:8px;font-size:13px;color:var(--gray-light);">
+                                ✍️ Escribe la traducción en el campo de abajo
+                            </div>
+                        ` : modo === 'multiple' ? `
+                            <div style="margin-top:8px;font-size:13px;color:var(--gray-light);">
+                                🤔 Selecciona la opción correcta
+                            </div>
+                        ` : modo === 'escucha' ? `
+                            <div style="margin-top:8px;font-size:13px;color:var(--gray-light);">
+                                👂 Escucha y repite en voz alta
+                            </div>
+                        ` : ''}
                     </div>
+                    
+                    <!-- ===== BOTONES DE ACCIÓN (MODO FLASHCARD Y ESCUCHA) ===== -->
+                    ${modo === 'flashcard' ? `
+                        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;position:relative;z-index:1;flex-wrap:wrap;">
+                            <button class="action-btn action-show" onclick="window.UIStudy._toggleFlashcardRespuesta()" style="
+                                padding:10px 24px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:14px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background: ${this._mostrandoRespuesta ? 'var(--bg)' : 'linear-gradient(135deg, #6C5CE7, #A29BFE)'};
+                                color: ${this._mostrandoRespuesta ? 'var(--gray)' : 'white'};
+                                box-shadow: ${this._mostrandoRespuesta ? 'none' : '0 4px 16px rgba(108,92,231,0.3)'};
+                                flex:1;
+                                min-width:120px;
+                            " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='none'">
+                                <i class="fas ${this._mostrandoRespuesta ? 'fa-eye-slash' : 'fa-eye'}"></i> 
+                                ${this._mostrandoRespuesta ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                            <button class="action-btn action-hint" onclick="window.UIStudy._generarPista()" style="
+                                padding:10px 24px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:14px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:var(--bg);
+                                color:var(--gray);
+                                flex:1;
+                                min-width:120px;
+                                border:2px solid var(--light);
+                            " onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--light)';this.style.color='var(--gray)'">
+                                💡 Pista
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${modo === 'escucha' ? `
+                        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;position:relative;z-index:1;flex-wrap:wrap;">
+                            <button class="action-btn action-listen" onclick="window.UIStudy._reproducirFrase('${(modoData.mostrar || frase.original).replace(/'/g, "\\'")}', '${frase.idioma || pipeline.idiomaObjetivo || 'es'}')" style="
+                                padding:12px 30px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:16px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:linear-gradient(135deg, #00CEC9, #00B894);
+                                color:white;
+                                box-shadow:0 4px 16px rgba(0,206,201,0.3);
+                                flex:1;
+                                min-width:140px;
+                            " onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 30px rgba(0,206,201,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(0,206,201,0.3)'">
+                                🔊 Reproducir
+                            </button>
+                            ${!this._mostrandoRespuesta ? `
+                                <button class="action-btn action-show" onclick="window.UIStudy._toggleFlashcardRespuesta()" style="
+                                    padding:12px 24px;
+                                    border:none;
+                                    border-radius:12px;
+                                    font-size:14px;
+                                    font-weight:700;
+                                    cursor:pointer;
+                                    transition:all 0.3s;
+                                    background:var(--bg);
+                                    color:var(--gray);
+                                    border:2px solid var(--light);
+                                    flex:1;
+                                    min-width:120px;
+                                " onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--light)';this.style.color='var(--gray)'">
+                                    Mostrar traducción
+                                </button>
+                            ` : `
+                                <div style="padding:12px 20px;background:var(--primary)06;border-radius:12px;font-size:16px;font-weight:600;color:var(--primary);border:2px dashed var(--primary)30;flex:1;min-width:120px;text-align:center;">
+                                    ${modoData.ocultar}
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- ===== BOTONES DE RESPUESTA (MODO FLASHCARD Y ESCUCHA) ===== -->
+                    ${(modo === 'flashcard' || modo === 'escucha') ? `
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;position:relative;z-index:1;">
+                            <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="
+                                padding:10px 4px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:12px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:var(--danger)10;
+                                color:var(--danger);
+                                border:2px solid var(--danger)20;
+                            " onmouseover="this.style.background='var(--danger)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--danger)10';this.style.color='var(--danger)';this.style.transform='none'">
+                                ❌<br><span style="font-size:10px;">Fallo</span>
+                            </button>
+                            <button class="respuesta-btn duda" onclick="window.UIStudy._responderEstudio('duda')" style="
+                                padding:10px 4px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:12px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:var(--warning)10;
+                                color:var(--warning);
+                                border:2px solid var(--warning)20;
+                            " onmouseover="this.style.background='var(--warning)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--warning)10';this.style.color='var(--warning)';this.style.transform='none'">
+                                ❓<br><span style="font-size:10px;">Duda</span>
+                            </button>
+                            <button class="respuesta-btn parcial" onclick="window.UIStudy._responderEstudio('parcial')" style="
+                                padding:10px 4px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:12px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:var(--secondary)10;
+                                color:var(--secondary);
+                                border:2px solid var(--secondary)20;
+                            " onmouseover="this.style.background='var(--secondary)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--secondary)10';this.style.color='var(--secondary)';this.style.transform='none'">
+                                ➖<br><span style="font-size:10px;">Parcial</span>
+                            </button>
+                            <button class="respuesta-btn correcto" onclick="window.UIStudy._responderEstudio('correcto')" style="
+                                padding:10px 4px;
+                                border:none;
+                                border-radius:12px;
+                                font-size:12px;
+                                font-weight:700;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:var(--success)10;
+                                color:var(--success);
+                                border:2px solid var(--success)20;
+                            " onmouseover="this.style.background='var(--success)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--success)10';this.style.color='var(--success)';this.style.transform='none'">
+                                ✅<br><span style="font-size:10px;">Correcto</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- ===== MODO ESCRITURA ===== -->
+                    ${modo === 'escritura' ? `
+                        <div style="margin-bottom:12px;position:relative;z-index:1;">
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <input type="text" id="respuestaEscritura" placeholder="✍️ Escribe la traducción..." style="
+                                    flex:1;
+                                    padding:12px 16px;
+                                    border:2px solid var(--light);
+                                    border-radius:12px;
+                                    font-size:16px;
+                                    font-family:var(--font);
+                                    background:var(--bg);
+                                    transition:all 0.3s;
+                                " onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 4px var(--primary)08'" onblur="this.style.borderColor='var(--light)';this.style.boxShadow='none'">
+                                <button id="btnValidarEscritura" style="
+                                    padding:12px 24px;
+                                    border:none;
+                                    border-radius:12px;
+                                    font-size:15px;
+                                    font-weight:700;
+                                    cursor:pointer;
+                                    transition:all 0.3s;
+                                    background:linear-gradient(135deg, #6C5CE7, #A29BFE);
+                                    color:white;
+                                    white-space:nowrap;
+                                    box-shadow:0 4px 16px rgba(108,92,231,0.3);
+                                " onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 30px rgba(108,92,231,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(108,92,231,0.3)'">
+                                    ✅ Validar
+                                </button>
+                            </div>
+                            
+                            <!-- Feedback de validación -->
+                            ${this._ultimaRespuesta ? `
+                                <div style="margin-top:10px;padding:12px 16px;border-radius:12px;background:${this._ultimaRespuesta.correcto ? 'var(--success)10' : this._ultimaRespuesta.aproximado ? 'var(--warning)10' : 'var(--danger)10'};border-left:4px solid ${this._ultimaRespuesta.correcto ? 'var(--success)' : this._ultimaRespuesta.aproximado ? 'var(--warning)' : 'var(--danger)'};animation:fadeUp 0.3s ease;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span style="font-size:20px;">${this._ultimaRespuesta.correcto ? '✅' : this._ultimaRespuesta.aproximado ? '🟡' : '❌'}</span>
+                                        <div>
+                                            <div style="font-weight:600;color:${this._ultimaRespuesta.correcto ? 'var(--success)' : this._ultimaRespuesta.aproximado ? 'var(--warning)' : 'var(--danger)'};">${this._ultimaRespuesta.mensaje}</div>
+                                            ${!this._ultimaRespuesta.correcto && !this._ultimaRespuesta.aproximado ? `
+                                                <div style="font-size:13px;color:var(--gray);margin-top:2px;">
+                                                    Correcta: <strong style="color:var(--primary);">${this._ultimaRespuesta.correctaEsperada}</strong>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                        ${this._ultimaRespuesta.correcto ? `
+                                            <button class="respuesta-btn correcto" onclick="window.UIStudy._responderEstudio('correcto')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--success);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">✅ Correcto</button>
+                                        ` : this._ultimaRespuesta.aproximado ? `
+                                            <button class="respuesta-btn parcial" onclick="window.UIStudy._responderEstudio('parcial')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--secondary);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">➖ Parcial</button>
+                                            <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--danger);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">❌ Fallo</button>
+                                        ` : `
+                                            <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--danger);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">❌ Fallo</button>
+                                        `}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div style="text-align:center;font-size:12px;color:var(--gray-light);margin-top:6px;">
+                                    💡 Escribe y pulsa Validar o presiona Enter
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- ===== MODO MÚLTIPLE - CORREGIDO ===== -->
+                    ${modo === 'multiple' ? `
+                        <div style="margin-bottom:12px;position:relative;z-index:1;">
+                            ${this._opcionesMultiple.length === 0 ? `
+                                <div style="text-align:center;padding:20px;color:var(--gray);">
+                                    <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+                                    <div style="margin-top:8px;">Generando opciones...</div>
+                                </div>
+                            ` : `
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    ${this._opcionesMultiple.map((opcion, i) => {
+                                        const correcta = isInverso ? frase.original : frase.traduccion;
+                                        const isCorrect = opcion === correcta;
+                                        const isSelected = this._ultimaRespuesta && opcion === this._ultimaRespuesta.opcionSeleccionada;
+                                        let bg = 'var(--white)';
+                                        let border = 'var(--light)';
+                                        let color = 'var(--dark)';
+                                        let icono = '';
+                                        if (this._ultimaRespuesta) {
+                                            if (isCorrect) {
+                                                bg = 'var(--success)10';
+                                                border = 'var(--success)';
+                                                color = 'var(--success)';
+                                                icono = '✅ ';
+                                            } else if (isSelected && !isCorrect) {
+                                                bg = 'var(--danger)10';
+                                                border = 'var(--danger)';
+                                                color = 'var(--danger)';
+                                                icono = '❌ ';
+                                            }
+                                        }
+                                        const disabled = this._ultimaRespuesta ? 'style="cursor:default;opacity:0.8;"' : '';
+                                        return `
+                                            <div class="multiple-opcion" data-texto="${opcion.replace(/'/g, "\\'")}" ${disabled} style="
+                                                padding:14px 12px;
+                                                border-radius:12px;
+                                                border:2px solid ${border};
+                                                background:${bg};
+                                                color:${color};
+                                                cursor:${this._ultimaRespuesta ? 'default' : 'pointer'};
+                                                text-align:center;
+                                                font-size:${opcion.length > 15 ? '14px' : '16px'};
+                                                font-weight:600;
+                                                transition:all 0.3s;
+                                            " onmouseover="${!this._ultimaRespuesta ? "this.style.borderColor='var(--primary)';this.style.background='var(--primary)04';this.style.transform='scale(1.02)'" : ''}" 
+                                               onmouseout="${!this._ultimaRespuesta ? "this.style.borderColor='var(--light)';this.style.background='var(--white)';this.style.transform='none'" : ''}">
+                                                ${icono}${opcion}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                ${this._ultimaRespuesta ? `
+                                    <div style="margin-top:10px;padding:12px 16px;border-radius:12px;background:${this._ultimaRespuesta.correcto ? 'var(--success)10' : 'var(--danger)10'};border-left:4px solid ${this._ultimaRespuesta.correcto ? 'var(--success)' : 'var(--danger)'};animation:fadeUp 0.3s ease;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <span style="font-size:20px;">${this._ultimaRespuesta.correcto ? '✅' : '❌'}</span>
+                                            <div>
+                                                <div style="font-weight:600;color:${this._ultimaRespuesta.correcto ? 'var(--success)' : 'var(--danger)'};">${this._ultimaRespuesta.mensaje}</div>
+                                                ${!this._ultimaRespuesta.correcto ? `
+                                                    <div style="font-size:13px;color:var(--gray);margin-top:2px;">
+                                                        Correcta: <strong style="color:var(--primary);">${this._ultimaRespuesta.correctaEsperada}</strong>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                            ${this._ultimaRespuesta.correcto ? `
+                                                <button class="respuesta-btn correcto" onclick="window.UIStudy._responderEstudio('correcto')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--success);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">✅ Correcto</button>
+                                            ` : `
+                                                <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--danger);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">❌ Fallo</button>
+                                            `}
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div style="text-align:center;font-size:12px;color:var(--gray-light);margin-top:6px;">
+                                        🤔 Selecciona una opción
+                                    </div>
+                                `}
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- ===== PALABRAS DESGLOSADAS ===== -->
+                    ${await this._renderPalabrasDesglosadasRobusto(frase) || ''}
+                    
+                    <!-- ===== NAVEGACIÓN ===== -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:2px solid var(--bg);position:relative;z-index:1;gap:12px;">
+                        <button class="nav-btn prev" onclick="window.UIStudy._fraseAnterior()" style="
+                            padding:10px 18px;
+                            border:none;
+                            border-radius:12px;
+                            font-size:14px;
+                            font-weight:700;
+                            cursor:pointer;
+                            transition:all 0.3s;
+                            background:var(--bg);
+                            color:var(--gray);
+                            border:2px solid var(--light);
+                            display:flex;
+                            align-items:center;
+                            gap:6px;
+                        " onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--light)';this.style.color='var(--gray)'">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        
+                        <div style="text-align:center;">
+                            <div style="font-size:20px;font-weight:800;color:var(--primary);">${actual}</div>
+                            <div style="font-size:11px;color:var(--gray-light);">/${total}</div>
+                        </div>
+                        
+                        <button class="nav-btn next" onclick="window.UIStudy._fraseSiguiente()" style="
+                            padding:10px 18px;
+                            border:none;
+                            border-radius:12px;
+                            font-size:14px;
+                            font-weight:700;
+                            cursor:pointer;
+                            transition:all 0.3s;
+                            background:linear-gradient(135deg, #6C5CE7, #A29BFE);
+                            color:white;
+                            box-shadow:0 4px 16px rgba(108,92,231,0.3);
+                            display:flex;
+                            align-items:center;
+                            gap:6px;
+                        " onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 30px rgba(108,92,231,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(108,92,231,0.3)'">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- ===== SELECTOR DE MODO ===== -->
+                    <div style="
+                        margin-top:16px;
+                        padding-top:14px;
+                        border-top:2px solid var(--bg);
+                        display:flex;
+                        gap:6px;
+                        flex-wrap:wrap;
+                        justify-content:center;
+                        position:relative;
+                        z-index:1;
+                    ">
+                        ${['flashcard', 'escritura', 'multiple', 'escucha'].map(m => `
+                            <button class="modo-btn ${this._modoEstudio === m ? 'active' : ''}" data-modo="${m}" onclick="window.UIStudy.cambiarModoEstudio('${m}')" style="
+                                padding:6px 14px;
+                                border:none;
+                                border-radius:20px;
+                                font-size:11px;
+                                font-weight:600;
+                                cursor:pointer;
+                                transition:all 0.3s;
+                                background:${this._modoEstudio === m ? 'var(--primary)' : 'var(--bg)'};
+                                color:${this._modoEstudio === m ? 'white' : 'var(--gray)'};
+                                border:2px solid ${this._modoEstudio === m ? 'var(--primary)' : 'var(--light)'};
+                                box-shadow:${this._modoEstudio === m ? '0 2px 12px rgba(108,92,231,0.3)' : 'none'};
+                                display:flex;
+                                align-items:center;
+                                gap:4px;
+                            " onmouseover="${this._modoEstudio !== m ? "this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" : ''}" onmouseout="${this._modoEstudio !== m ? "this.style.borderColor='var(--light)';this.style.color='var(--gray)'" : ''}">
+                                ${m === 'flashcard' ? '🃏' : m === 'escritura' ? '✍️' : m === 'multiple' ? '📋' : '🎧'} ${m.charAt(0).toUpperCase() + m.slice(1)}
+                            </button>
+                        `).join('')}
+                    </div>
+                    
+                </div>
                 `;
-                
-                if (modo === 'flashcard') {
-                    html += this._renderFlashcard(frase, modoData);
-                } else if (modo === 'escritura') {
-                    html += this._renderEscritura(frase, modoData);
-                } else if (modo === 'multiple') {
-                    if (this._opcionesMultiple.length === 0) {
-                        html += '<div style="text-align:center;padding:20px;color:var(--gray);"><i class="fas fa-spinner fa-spin"></i> Generando opciones...</div>';
-                        this._generarOpcionesMultiplesConGroq(frase, modoData).then(opciones => {
-                            this._opcionesMultiple = opciones;
-                            this._renderizarFraseInteractiva();
-                        }).catch(() => {
-                            this._generarOpcionesMultiplesFallback(frase, modoData).then(opciones => {
-                                this._opcionesMultiple = opciones;
-                                this._renderizarFraseInteractiva();
-                            });
-                        });
-                    } else {
-                        html += this._renderMultiple(frase, modoData);
-                    }
-                } else if (modo === 'escucha') {
-                    html += this._renderEscucha(frase, modoData);
-                }
-                
-                try {
-                    const palabrasHtml = await this._renderPalabrasDesglosadasRobusto(frase);
-                    if (palabrasHtml) html += palabrasHtml;
-                } catch (e) {
-                    console.warn('⚠️ Error renderizando palabras desglosadas:', e);
-                }
-                
-                html += '<div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;">';
-                html += '<button class="btn-secondary" onclick="window.UIStudy._fraseAnterior()" style="padding:8px 16px;font-size:13px;"><i class="fas fa-chevron-left"></i> Anterior</button>';
-                html += '<span style="font-size:13px;color:var(--gray);padding:8px 0;">' + actual + ' / ' + total + '</span>';
-                html += '<button class="btn-secondary" onclick="window.UIStudy._fraseSiguiente()" style="padding:8px 16px;font-size:13px;">Siguiente <i class="fas fa-chevron-right"></i></button>';
-                html += '</div>';
-                
-                html += '</div>';
                 
                 container.innerHTML = html;
                 
-                const counter = document.getElementById('cardCounter');
-                if (counter) counter.textContent = actual + ' / ' + total;
+                // ============================================================
+                // GENERACIÓN ASÍNCRONA DE OPCIONES MÚLTIPLES
+                // ============================================================
+                // El diseño nuevo dibuja primero el indicador "Generando opciones...".
+                // Aquí arrancamos la generación y, cuando termina, volvemos a renderizar
+                // la frase para sustituir el indicador por las 4 opciones.
+                if (modo === 'multiple' && this._opcionesMultiple.length === 0 && !this._generandoOpciones) {
+                    const fraseEnGeneracion = frase;
+
+                    this._generarOpcionesMultiplesConGroq(frase, modoData)
+                        .then(opciones => {
+                            // Evitar que una generación antigua sobrescriba una frase nueva.
+                            if (pipeline?.fraseActual === fraseEnGeneracion && this._modoEstudio === 'multiple') {
+                                this._opcionesMultiple = Array.isArray(opciones) ? opciones : [];
+                                this._renderizarFraseInteractiva();
+                            }
+                        })
+                        .catch(error => {
+                            console.warn('⚠️ Error generando opciones múltiples:', error);
+                            return this._generarOpcionesMultiplesFallback(fraseEnGeneracion, modoData);
+                        })
+                        .then(opciones => {
+                            // Este segundo .then solo actúa cuando se utilizó el fallback.
+                            if (opciones && pipeline?.fraseActual === fraseEnGeneracion && this._modoEstudio === 'multiple') {
+                                this._opcionesMultiple = Array.isArray(opciones) ? opciones : [];
+                                this._renderizarFraseInteractiva();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ Error en fallback de opciones múltiples:', error);
+                            this._generandoOpciones = false;
+                        });
+                }
+
+                // ============================================================
+                // ENLAZAR EVENTOS
+                // ============================================================
                 
                 if (modo === 'escritura') {
                     setTimeout(() => { this._enlazarEventosEscritura(); }, 50);
@@ -1503,6 +1932,7 @@
                     setTimeout(() => { this._enlazarEventosMultiple(); }, 50);
                 }
                 
+                // Verificar progreso
                 await this._verificarProgresoTema();
                 
             } catch (e) {
@@ -1511,6 +1941,277 @@
             } finally {
                 this._renderizando = false;
             }
+        }
+
+        // ============================================================
+        // GENERAR OPCIONES MÚLTIPLES - VERSIÓN ESTABLE
+        // ============================================================
+
+        async _generarOpcionesMultiplesConGroq(frase, modoData) {
+            // Si ya hay opciones generadas, devolverlas inmediatamente
+            if (this._opcionesMultiple && this._opcionesMultiple.length > 0) {
+                this._generandoOpciones = false;
+                return this._opcionesMultiple;
+            }
+            
+            // Si ya se está generando, esperar con timeout
+            if (this._generandoOpciones) {
+                return new Promise((resolve) => {
+                    let intentos = 0;
+                    const maxIntentos = 20; // 4 segundos máximo
+                    const checkInterval = setInterval(() => {
+                        intentos++;
+                        if (this._opcionesMultiple && this._opcionesMultiple.length > 0) {
+                            clearInterval(checkInterval);
+                            this._generandoOpciones = false;
+                            resolve(this._opcionesMultiple);
+                        } else if (intentos >= maxIntentos) {
+                            clearInterval(checkInterval);
+                            this._generandoOpciones = false;
+                            // Fallback directo
+                            this._generarOpcionesMultiplesFallback(frase, modoData).then(resolve);
+                        }
+                    }, 200);
+                });
+            }
+            
+            this._generandoOpciones = true;
+            
+            try {
+                const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                const esInverso = modoData.esInverso;
+                
+                let correcta;
+                if (esInverso) {
+                    correcta = frase.original;
+                } else {
+                    correcta = frase.traduccion;
+                }
+                
+                // === INTENTAR CON GROQ ===
+                if (window.vigia && window.vigia.enLinea && window.vigia._apiKeyValidada) {
+                    try {
+                        console.log('🧠 Generando opciones con Groq...');
+                        
+                        // Obtener frases similares
+                        const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
+                        let candidatas = [];
+                        
+                        if (esInverso) {
+                            candidatas = todasFrases
+                                .filter(f => f.id !== frase.id && f.original && f.original !== correcta)
+                                .sort(() => Math.random() - 0.5)
+                                .slice(0, 10)
+                                .map(f => f.original);
+                        } else {
+                            candidatas = todasFrases
+                                .filter(f => f.id !== frase.id && f.traduccion && f.traduccion !== correcta && f.traduccion.trim() !== '')
+                                .sort(() => Math.random() - 0.5)
+                                .slice(0, 10)
+                                .map(f => f.traduccion);
+                        }
+                        
+                        // Si no hay candidatas, usar fallback
+                        if (candidatas.length < 3) {
+                            console.log('⚠️ Sin candidatas suficientes, usando fallback');
+                            return this._generarOpcionesMultiplesFallback(frase, modoData);
+                        }
+                        
+                        // Prompt completo
+                        const prompt = `Genera 3 opciones INCORRECTAS (distractores) para una pregunta de opción múltiple sobre traducción de idiomas.
+
+PREGUNTA: Traduce "${esInverso ? frase.traduccion : frase.original}" al ${esInverso ? idioma : 'español'}.
+
+RESPUESTA CORRECTA: "${correcta}"
+
+POSIBLES DISTRACTORES (inspírate en estas, NO las copies exactamente):
+${candidatas.slice(0, 6).map((c, i) => `${i+1}. "${c}"`).join('\n')}
+
+REGLAS:
+1. Responde SOLO con un array JSON de 3 strings.
+2. Las opciones deben ser PLAUSIBLES pero INCORRECTAS.
+3. NO incluyas la respuesta correcta.
+4. Formato: ["opcion1", "opcion2", "opcion3"]`;
+
+                        const resultado = await window.vigia._consultarGroq(prompt, 'json');
+                        
+                        if (resultado && Array.isArray(resultado) && resultado.length >= 3) {
+                            const opcionesFiltradas = resultado
+                                .filter(o => o && typeof o === 'string' && o.trim() !== '' && o !== correcta)
+                                .slice(0, 3);
+                            
+                            if (opcionesFiltradas.length >= 3) {
+                                const opcionesFinales = [correcta, ...opcionesFiltradas];
+                                const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                                
+                                this._opcionesMultiple = mezcladas;
+                                this._metodoValidacion = 'online';
+                                this._generandoOpciones = false;
+                                console.log('✅ Opciones generadas con Groq:', mezcladas);
+                                return mezcladas;
+                            }
+                        }
+                        
+                        console.log('⚠️ Groq no dio opciones válidas, usando fallback');
+                        return this._generarOpcionesMultiplesFallback(frase, modoData);
+                        
+                    } catch (error) {
+                        console.warn('⚠️ Error con Groq:', error);
+                        return this._generarOpcionesMultiplesFallback(frase, modoData);
+                    }
+                } else {
+                    console.log('📝 Vigía no disponible, usando generación offline');
+                    return this._generarOpcionesMultiplesFallback(frase, modoData);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en generación múltiple:', error);
+                this._generandoOpciones = false;
+                return this._generarOpcionesMultiplesFallback(frase, modoData);
+            }
+        }
+
+        // ============================================================
+        // GENERAR OPCIONES MÚLTIPLES - FALLBACK OFFLINE (SIEMPRE FUNCIONA)
+        // ============================================================
+
+        async _generarOpcionesMultiplesFallback(frase, modoData) {
+            console.log('📝 Generando opciones múltiples OFFLINE...');
+            
+            try {
+                const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                const esInverso = modoData.esInverso;
+                
+                let correcta;
+                if (esInverso) {
+                    correcta = frase.original;
+                } else {
+                    correcta = frase.traduccion;
+                }
+                
+                // Obtener frases del mismo idioma
+                const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
+                let opciones = [];
+                
+                if (esInverso) {
+                    opciones = todasFrases
+                        .filter(f => f.id !== frase.id && f.original && f.original !== correcta)
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, 10)
+                        .map(f => f.original);
+                } else {
+                    opciones = todasFrases
+                        .filter(f => f.id !== frase.id && f.traduccion && f.traduccion !== correcta && f.traduccion.trim() !== '')
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, 10)
+                        .map(f => f.traduccion);
+                }
+                
+                // Eliminar duplicados y vacíos
+                opciones = [...new Set(opciones.filter(o => o && o.trim() !== '' && o !== correcta))];
+                
+                // Si hay suficientes opciones
+                if (opciones.length >= 3) {
+                    const seleccionadas = opciones.slice(0, 3);
+                    const opcionesFinales = [correcta, ...seleccionadas];
+                    const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                    
+                    this._opcionesMultiple = mezcladas;
+                    this._metodoValidacion = 'offline';
+                    this._generandoOpciones = false;
+                    console.log('✅ Opciones generadas OFFLINE:', mezcladas);
+                    return mezcladas;
+                }
+                
+                // Si NO hay suficientes opciones, crear distractores sintéticos
+                console.log('⚠️ Generando distractores sintéticos...');
+                const distractores = this._generarDistractoresSinteticos(correcta, esInverso, idioma);
+                const opcionesFinales = [correcta, ...distractores];
+                const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                
+                this._opcionesMultiple = mezcladas;
+                this._metodoValidacion = 'offline';
+                this._generandoOpciones = false;
+                console.log('✅ Opciones sintéticas generadas:', mezcladas);
+                return mezcladas;
+                
+            } catch (error) {
+                console.error('❌ Error en fallback:', error);
+                // Fallback último recurso
+                const correcta = modoData.esInverso ? frase.original : frase.traduccion;
+                const opcionesFinales = [
+                    correcta,
+                    correcta + ' (variante 1)',
+                    correcta + ' (variante 2)',
+                    correcta + ' (variante 3)'
+                ];
+                const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                
+                this._opcionesMultiple = mezcladas;
+                this._metodoValidacion = 'offline';
+                this._generandoOpciones = false;
+                console.log('✅ Opciones de último recurso:', mezcladas);
+                return mezcladas;
+            }
+        }
+
+        // ============================================================
+        // GENERAR DISTRACTORES SINTÉTICOS
+        // ============================================================
+
+        _generarDistractoresSinteticos(correcta, esInverso, idioma) {
+            const distractores = [];
+            const palabras = correcta.split(' ');
+            
+            // Distractor 1: cambiar una palabra
+            if (palabras.length > 1) {
+                const variante = palabras.map((p, i) => {
+                    if (i === 0 && p.length > 2) return p.slice(0, -1) + 's';
+                    return p;
+                }).join(' ');
+                if (variante !== correcta) distractores.push(variante);
+            }
+            
+            // Distractor 2: añadir palabra
+            if (palabras.length >= 1) {
+                const variante = palabras.join(' ') + ' extra';
+                if (variante !== correcta) distractores.push(variante);
+            }
+            
+            // Distractor 3: sinónimo aproximado
+            const sinonimos = esInverso ? 
+                ['otra', 'diferente', 'alternativa', 'similar'] :
+                ['otra cosa', 'diferente', 'alternativa', 'parecido'];
+            
+            for (const s of sinonimos) {
+                const variante = esInverso ? 
+                    s + ' ' + palabras.join(' ') :
+                    correcta + ' ' + s;
+                if (variante !== correcta && !distractores.includes(variante)) {
+                    distractores.push(variante);
+                    break;
+                }
+            }
+            
+            // Si no hay distractores, usar genéricos
+            while (distractores.length < 3) {
+                const gen = esInverso ? 
+                    ['otra palabra', 'palabra diferente', 'alternativa'] : 
+                    ['otra opción', 'opción diferente', 'alternativa'];
+                for (const g of gen) {
+                    if (!distractores.includes(g) && g !== correcta) {
+                        distractores.push(g);
+                    }
+                }
+                // Evitar loop infinito
+                if (distractores.length >= 3) break;
+                // Último recurso
+                if (distractores.length < 3) {
+                    distractores.push('Opción ' + (distractores.length + 1));
+                }
+            }
+            
+            return distractores.slice(0, 3);
         }
 
         // ============================================================
@@ -4056,86 +4757,6 @@
         }
 
         // ============================================================
-        // GENERAR OPCIONES MÚLTIPLES
-        // ============================================================
-
-        async _generarOpcionesMultiplesConGroq(frase, modoData) {
-            if (this._generandoOpciones) {
-                return new Promise((resolve) => {
-                    const checkInterval = setInterval(() => {
-                        if (!this._generandoOpciones && this._opcionesMultiple.length > 0) {
-                            clearInterval(checkInterval);
-                            resolve(this._opcionesMultiple);
-                        }
-                    }, 100);
-                });
-            }
-            this._generandoOpciones = true;
-            const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
-            const esJeroglifico = this._esJeroglifico(idioma);
-            const esInverso = modoData.esInverso;
-            const nivel = frase.nivel || pipeline.nivel || 'A1';
-            let correcta;
-            if (esInverso) correcta = frase.original;
-            else correcta = frase.traduccion;
-            if (window.vigia && window.vigia.enLinea && window.vigia._apiKeyValidada) {
-                try {
-                    const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
-                    const frasesSimilares = todasFrases.filter(f => f.id !== frase.id).sort(() => Math.random() - 0.5).slice(0, 10);
-                    let candidatas = [];
-                    if (esInverso) candidatas = frasesSimilares.map(f => f.original);
-                    else candidatas = frasesSimilares.map(f => f.traduccion);
-                    candidatas = candidatas.filter(t => t && t.trim() !== '' && t !== correcta);
-                    const prompt = `...`;
-                    const resultado = await window.vigia._consultarGroq(prompt, 'json');
-                    if (resultado && resultado.opciones && Array.isArray(resultado.opciones) && resultado.opciones.length >= 3) {
-                        let opcionesFiltradas = resultado.opciones.filter(o => o && o.trim() !== '' && o.trim() !== correcta).slice(0, 3);
-                        if (opcionesFiltradas.length >= 3) {
-                            const opcionesFinales = [correcta, ...opcionesFiltradas];
-                            const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
-                            this._generandoOpciones = false;
-                            this._opcionesMultiple = mezcladas;
-                            this._metodoValidacion = 'online';
-                            return mezcladas;
-                        }
-                    }
-                } catch (e) {}
-            }
-            return this._generarOpcionesMultiplesFallback(frase, modoData);
-        }
-
-        async _generarOpcionesMultiplesFallback(frase, modoData) {
-            const esInverso = modoData.esInverso;
-            const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
-            let correcta;
-            if (esInverso) correcta = frase.original;
-            else correcta = frase.traduccion;
-            const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
-            let opcionesFinales = [];
-            if (esInverso) {
-                opcionesFinales = todasFrases.filter(f => f.id !== frase.id && f.original !== correcta && f.original)
-                    .sort(() => Math.random() - 0.5).slice(0, 5).map(f => f.original);
-            } else {
-                opcionesFinales = todasFrases.filter(f => f.id !== frase.id && f.traduccion !== correcta && f.traduccion)
-                    .sort(() => Math.random() - 0.5).slice(0, 5).map(f => f.traduccion);
-            }
-            opcionesFinales = opcionesFinales.filter(o => o && o.trim() !== '' && o !== correcta);
-            const opcionesUnicas = [correcta];
-            for (const o of opcionesFinales) {
-                if (!opcionesUnicas.includes(o) && opcionesUnicas.length < 4) opcionesUnicas.push(o);
-            }
-            while (opcionesUnicas.length < 4) {
-                const fallback = esInverso ? (this._esJeroglifico(idioma) ? '其他' : 'Otro') : 'Otra opción';
-                if (!opcionesUnicas.includes(fallback) && fallback !== correcta) opcionesUnicas.push(fallback);
-                else opcionesUnicas.push(correcta + '?');
-            }
-            const mezcladas = opcionesUnicas.sort(() => Math.random() - 0.5);
-            this._generandoOpciones = false;
-            this._opcionesMultiple = mezcladas;
-            return mezcladas;
-        }
-
-        // ============================================================
         // RESPUESTA Y NAVEGACIÓN - CORREGIDO CON RECARGA
         // ============================================================
         
@@ -4198,16 +4819,11 @@
     // ============================================================
 
     window.UIStudy = new UIStudy();
-    console.log('✅ UIStudy v23.9 - CON DETECCIÓN DE ORIGEN "TONOS"');
+    console.log('✅ UIStudy v24.1 - DISEÑO INMERSIVO REPARADO');
+    console.log('  🔧 Método cambiarModoEstudio reparado y expuesto correctamente');
+    console.log('  🔧 Modo múltiple con generación de opciones estable');
     console.log('  🎵 Detección de origen "tonos" para redirección al Estudio de Tonos');
     console.log('  🎵 Modal de completado con botón "Volver al Estudio de Tonos"');
-    console.log('  🎵 Redirección automática al módulo Tonos al completar una historia tonal');
-    console.log('  🗑️ Botón "Libro de Lectura" eliminado del módulo Estudiar');
     console.log('  📚 El acceso a la Biblioteca de Lectura se hará desde el Dashboard');
     console.log('  🔥 Recarga de progreso completo después de cada respuesta');
-    console.log('  🔥 Sincronización de fase actualizada con el progreso de DB');
-    console.log('  🔥 Corrección de propagación de RCN 5.0 + Fase 2');
-    console.log('  🔥 Verificación de completado de tema con progreso real');
-    console.log('  🔥 Método _recargarProgresoCompleto() para refresco total');
-    console.log('  ✅ Todas las funcionalidades originales preservadas');
 })();

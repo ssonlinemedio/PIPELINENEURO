@@ -1259,6 +1259,131 @@
             font-size: 32px;
             font-weight: 700;
         }
+
+        /* ============================================================
+           ESTILOS PARA UI.STUDY - SIN DUPLICADOS
+           ============================================================ */
+        
+        .study-card {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .study-card:hover {
+            box-shadow: 0 12px 60px rgba(0,0,0,0.12) !important;
+        }
+
+        .origen-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 10px;
+            border-radius: 14px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .origen-badge.elipse {
+            background: rgba(108,92,231,0.12);
+            color: #6C5CE7;
+            border: 1px solid rgba(108,92,231,0.25);
+        }
+        .origen-badge.cruzada {
+            background: rgba(0,206,201,0.12);
+            color: #00CEC9;
+            border: 1px solid rgba(0,206,201,0.25);
+        }
+        .origen-badge.tonos {
+            background: rgba(253,203,110,0.15);
+            color: #E17055;
+            border: 1px solid rgba(253,203,110,0.3);
+        }
+        .origen-badge.tema {
+            background: rgba(0,184,148,0.10);
+            color: #00B894;
+            border: 1px solid rgba(0,184,148,0.2);
+        }
+
+        .modo-btn {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modo-btn.active {
+            box-shadow: 0 2px 16px rgba(108,92,231,0.35);
+        }
+        .modo-btn:not(.active):hover {
+            transform: translateY(-2px);
+        }
+
+        .respuesta-btn {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .respuesta-btn:hover {
+            transform: translateY(-2px) scale(1.02);
+        }
+        .respuesta-btn:active {
+            transform: scale(0.95);
+        }
+
+        .multiple-opcion {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .multiple-opcion:not([style*="cursor:default"]):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(108,92,231,0.15);
+        }
+
+        .study-card {
+            animation: studyCardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes studyCardIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .palabra-burbuja {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            cursor: pointer;
+        }
+        .palabra-burbuja:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 4px 20px rgba(108,92,231,0.2);
+        }
+
+        @media (max-width: 480px) {
+            .study-card {
+                padding: 16px 14px !important;
+                border-radius: 16px !important;
+            }
+            .frase-container {
+                padding: 14px 8px !important;
+            }
+            .frase-container div:first-child {
+                font-size: 26px !important;
+            }
+            .respuesta-btn {
+                padding: 8px 4px !important;
+                font-size: 10px !important;
+            }
+            .respuesta-btn span {
+                font-size: 8px !important;
+            }
+            .multiple-opcion {
+                font-size: 13px !important;
+                padding: 10px 8px !important;
+            }
+            .modo-btn {
+                font-size: 10px !important;
+                padding: 4px 10px !important;
+            }
+            .nav-btn {
+                font-size: 12px !important;
+                padding: 8px 12px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1495,7 +1620,7 @@
                 </div>
             </div>
 
-            <!-- ===== MODULO: ESTUDIAR ===== -->
+            <!-- ===== MODULO: ESTUDIAR - SIN DUPLICADOS ===== -->
             <div id="studyModule" class="module-view">
                 <div class="module-header">
                     <button class="btn-back" onclick="ui.volverDashboard()">
@@ -1508,37 +1633,11 @@
                 </div>
                 <div class="module-content">
                     <div id="cardContainer" class="card-container">
-                        <!-- Tarjetas renderizadas por pipeline -->
+                        <!-- TODO: Renderizado completo desde UIStudy._renderizarFraseInteractiva() -->
+                        <!-- Incluye: selector de modo, tarjeta con frase, botones de respuesta, navegación, palabras desglosadas -->
                     </div>
-                    <div class="study-controls">
-                        <div class="study-actions">
-                            <button id="btnFail" class="action-btn danger">
-                                <i class="fas fa-times"></i>
-                                <span>Fallo</span>
-                            </button>
-                            <button id="btnDoubt" class="action-btn warning">
-                                <i class="fas fa-question"></i>
-                                <span>Duda</span>
-                            </button>
-                            <button id="btnPartial" class="action-btn info">
-                                <i class="fas fa-minus"></i>
-                                <span>Parcial</span>
-                            </button>
-                            <button id="btnCorrect" class="action-btn success">
-                                <i class="fas fa-check"></i>
-                                <span>Correcto</span>
-                            </button>
-                        </div>
-                        <div class="navigation-controls">
-                            <button id="prevCard" class="nav-btn">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            <span id="cardCounter" class="counter">0 / 0</span>
-                            <button id="nextCard" class="nav-btn">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
-                    </div>
+                    <!-- ⚠️ ELIMINADOS: study-controls duplicados (botones de respuesta y navegación) -->
+                    <!-- ⚠️ ELIMINADOS: modo-selector duplicado -->
                 </div>
             </div>
 
@@ -1838,7 +1937,7 @@
                 </div>
             </div>
 
-            <!-- ===== MODULO: TUTOR NEUROADAPTATIVO - USANDO tutorFullContainer ===== -->
+            <!-- ===== MODULO: TUTOR NEUROADAPTATIVO ===== -->
             <div id="tutorModule" class="module-view">
                 <div class="module-header">
                     <button class="btn-back" onclick="window.uiCore.volverDashboard()">
@@ -1850,7 +1949,6 @@
                     </div>
                 </div>
                 <div class="module-content">
-                    <!-- tutorFullContainer es donde tutorNeuro.js renderiza su interfaz de élite -->
                     <div id="tutorFullContainer"></div>
                 </div>
             </div>

@@ -2381,3 +2381,136 @@ main {
     transform: scale(1.05);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+
+/* ============================================================
+   ESTILOS PARA UI.STUDY V24 - DISEÑO INMERSIVO
+   ============================================================ */
+
+/* Tarjeta de estudio */
+.study-card {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.study-card:hover {
+    box-shadow: 0 12px 60px rgba(0,0,0,0.12) !important;
+}
+
+/* Origen badges */
+.origen-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 12px;
+    border-radius: 16px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+.origen-badge.elipse {
+    background: rgba(108,92,231,0.12);
+    color: #6C5CE7;
+    border: 1px solid rgba(108,92,231,0.25);
+}
+.origen-badge.cruzada {
+    background: rgba(0,206,201,0.12);
+    color: #00CEC9;
+    border: 1px solid rgba(0,206,201,0.25);
+}
+.origen-badge.tonos {
+    background: rgba(253,203,110,0.15);
+    color: #E17055;
+    border: 1px solid rgba(253,203,110,0.3);
+}
+.origen-badge.tema {
+    background: rgba(0,184,148,0.10);
+    color: #00B894;
+    border: 1px solid rgba(0,184,148,0.2);
+}
+
+/* Botones de respuesta */
+.respuesta-btn {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.respuesta-btn:hover {
+    transform: translateY(-2px) scale(1.02);
+}
+.respuesta-btn:active {
+    transform: scale(0.95);
+}
+
+/* Opciones múltiples */
+.multiple-opcion {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.multiple-opcion:not([style*="cursor:default"]):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(108,92,231,0.15);
+}
+
+/* Animación de entrada para la tarjeta */
+.study-card {
+    animation: studyCardIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes studyCardIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Modo selector */
+.modo-btn {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.modo-btn.active {
+    box-shadow: 0 2px 16px rgba(108,92,231,0.35);
+}
+.modo-btn:not(.active):hover {
+    transform: translateY(-2px);
+}
+
+/* Burbujas de palabras desglosadas */
+.palabra-burbuja {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    cursor: pointer;
+}
+.palabra-burbuja:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 4px 20px rgba(108,92,231,0.2);
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+    .study-card {
+        padding: 16px 14px !important;
+        border-radius: 16px !important;
+    }
+    .frase-container {
+        padding: 14px 8px !important;
+    }
+    .frase-container div:first-child {
+        font-size: 26px !important;
+    }
+    .respuesta-btn {
+        padding: 8px 4px !important;
+        font-size: 10px !important;
+    }
+    .respuesta-btn span {
+        font-size: 8px !important;
+    }
+    .multiple-opcion {
+        font-size: 13px !important;
+        padding: 10px 8px !important;
+    }
+    .modo-btn {
+        font-size: 10px !important;
+        padding: 4px 10px !important;
+    }
+    .nav-btn {
+        font-size: 12px !important;
+        padding: 8px 12px !important;
+    }
+}

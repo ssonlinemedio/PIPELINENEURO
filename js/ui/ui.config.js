@@ -1,3621 +1,4462 @@
 // ============================================================
-// UI CONFIG v24.4 - CORREGIDO PARA APK: CARGA DE ARCHIVOS LOCALES
-// - Usa XMLHttpRequest para archivos locales en APK
-// - Múltiples rutas de búsqueda (assets/data/, www/data/, etc.)
-// - Fallback con fetch para servidores HTTP
-// - Detección de modo APK (file:// protocol)
-// - Instrucciones claras para desglose COMPLETO de palabras en Super Power
-// - Persistencia de idioma corregida
-// - Importación de temas por niveles con códigos ISO
-// - Modal de importación con SPINNER, BARRA PROGRESO y ANIMACIONES
-// - Super Power importa SIEMPRE como "En Curso"
+// UI STUDY v24.1 - DISEÑO INMERSIVO - CORREGIDO
 // ============================================================
 
-class UIConfig {
-    constructor() {
-        this._ultimoGapAnalysis = null;
-        this._examenNivelActual = null;
-        this._editandoIdioma = null;
-        this._modalIdiomaAbierto = false;
-        this._eventosConfigurados = false;
-        this._recargando = false;
-        this._validandoIdioma = false;
-        this._examenActivo = false;
-        this._cambiandoIdioma = false;
-        this._generandoSuperJSON = false;
-        this._actualizandoVersiones = false;
-        this._ultimaActualizacionVersiones = 0;
-        
-        // PROPIEDADES PARA IMPORTACIÓN DE TEMAS POR NIVELES
-        this._importandoTemasNivel = false;
-        this._archivosDisponibles = [];
-        this._archivosSeleccionados = new Set();
-        this._importacionResultados = [];
-        this._carpetaData = 'data/';
-        this._archivosCargados = false;
-        this._rutaEncontrada = null;
-        this._esModoAPK = false;
-        
-        this._NIVELES = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-        this._NIVEL_ICONOS = { 'A1': '🌱', 'A2': '🌿', 'B1': '🌳', 'B2': '🌲', 'C1': '🏔️', 'C2': '🗻' };
-        this._NIVEL_COLORES = { 'A1': '#6C5CE7', 'A2': '#0984E3', 'B1': '#00B894', 'B2': '#FDCB6E', 'C1': '#E17055', 'C2': '#FD79A8' };
-        this._logrosDesbloqueados = new Set();
-        
-        // 🔥 MAPA DE NOMBRES DE IDIOMA A CÓDIGOS ISO
-        this._MAP_NOMBRE_A_ISO = {
-            'chino': 'zh',
-            'español': 'es',
-            'es': 'es',
-            'ingles': 'en',
-            'inglés': 'en',
-            'en': 'en',
-            'frances': 'fr',
-            'francés': 'fr',
-            'fr': 'fr',
-            'aleman': 'de',
-            'alemán': 'de',
-            'de': 'de',
-            'italiano': 'it',
-            'it': 'it',
-            'portugues': 'pt',
-            'portugués': 'pt',
-            'pt': 'pt',
-            'japones': 'ja',
-            'japonés': 'ja',
-            'ja': 'ja',
-            'coreano': 'ko',
-            'ko': 'ko',
-            'ruso': 'ru',
-            'ru': 'ru',
-            'arabe': 'ar',
-            'árabe': 'ar',
-            'ar': 'ar',
-            'hindi': 'hi',
-            'hi': 'hi',
-            'chinese': 'zh',
-            'english': 'en',
-            'spanish': 'es',
-            'french': 'fr',
-            'german': 'de',
-            'italian': 'it',
-            'portuguese': 'pt',
-            'japanese': 'ja',
-            'korean': 'ko',
-            'russian': 'ru',
-            'arabic': 'ar'
-        };
-        
-        // 🔥 CLAVES PARA PERSISTENCIA DEL IDIOMA
-        this._KEY_IDIOMA_ACTIVO = 'pipeline_idioma_activo';
-        this._KEY_IDIOMA_SELECCIONADO = 'pipeline_idioma_seleccionado';
-        this._KEY_USUARIO = 'pipeline_usuario';
-        
-        this._FAMILIAS_SEMANTICAS = [
-            'Transporte', 'Comida y Bebida', 'Familia', 'Casa y Hogar',
-            'Ropa', 'Animales', 'Naturaleza', 'Tiempo y Clima',
-            'Salud', 'Trabajo', 'Educación', 'Deportes',
-            'Arte', 'Música', 'Tecnología', 'Viajes',
-            'Compras', 'Comunicación', 'Emociones', 'Rutina',
-            'Ciudad', 'Cultura', 'Historia', 'Ciencia'
-        ];
-        
-        this._IDIOMAS_JEROGLIFICOS = ['zh', 'ja', 'ko', 'chino', 'japonés', 'coreano', 'chinese', 'japanese', 'korean', 'mandarin', 'mandarín'];
-        this._LOGROS_BASE = {
-            'primer_estudio': { nombre: '🌟 Primer Estudio', desc: 'Estudia tu primer carácter', icono: '🌟' },
-            '3_estudios': { nombre: '📚 3 Estudios', desc: 'Estudia 3 caracteres diferentes', icono: '📚' },
-            '10_estudios': { nombre: '🎓 10 Estudios', desc: 'Estudia 10 caracteres diferentes', icono: '🎓' },
-            '5_palabras': { nombre: '📝 5 Palabras', desc: 'Aprende 5 palabras derivadas', icono: '📝' },
-            '20_palabras': { nombre: '📖 20 Palabras', desc: 'Aprende 20 palabras derivadas', icono: '📖' },
-            '50_palabras': { nombre: '🏆 50 Palabras', desc: 'Aprende 50 palabras derivadas', icono: '🏆' }
-        };
-        
-        this._TEMAS_PREDEFINIDOS = {
-            'v2.0': {
-                'A1': ['Mi familia', 'La casa y el hogar', 'Comida y bebida', 'Mi rutina diaria', 'La ciudad y el barrio', 'La ropa y los colores', 'El tiempo y las estaciones', 'Los animales'],
-                'A2': ['Viajes y transportes', 'Compras y tiendas', 'Salud y medicina', 'Deportes y ocio', 'Trabajo y profesiones', 'Música y cultura', 'Comunicación y tecnología', 'El medio ambiente'],
-                'B1': ['Relaciones personales', 'Educación y aprendizaje', 'Medios de comunicación', 'Turismo y patrimonio', 'Tecnología y futuro', 'Gastronomía internacional', 'Arte y creatividad', 'Eventos históricos'],
-                'B2': ['Política y sociedad', 'Economía y finanzas', 'Ciencia e investigación', 'Filosofía y pensamiento', 'Psicología y comportamiento', 'Globalización e interculturalidad', 'Desarrollo sostenible', 'Literatura y narrativa'],
-                'C1': ['Crítica cultural', 'Retórica y argumentación', 'Antropología social', 'Investigación académica', 'Análisis del discurso'],
-                'C2': ['Especialización académica', 'Debate y oratoria', 'Creación literaria', 'Análisis crítico avanzado']
-            },
-            'v3.0': {
-                'A1': ['Mi familia', 'La casa y el hogar', 'Comida y bebida', 'Mi rutina diaria', 'La ciudad y el barrio', 'La ropa y los colores', 'El tiempo y las estaciones', 'Los animales', 'La tecnología básica', 'Salud y cuidados', 'Ocio y entretenimiento', 'Naturaleza y paisajes'],
-                'A2': ['Viajes y transportes', 'Compras y tiendas', 'Salud y medicina', 'Deportes y ocio', 'Trabajo y profesiones', 'Música y cultura', 'Comunicación y tecnología', 'El medio ambiente', 'Restaurantes y comidas', 'Eventos y celebraciones', 'La escuela y el estudio', 'La ciudad moderna'],
-                'B1': ['Relaciones personales', 'Educación y aprendizaje', 'Medios de comunicación', 'Turismo y patrimonio', 'Tecnología y futuro', 'Gastronomía internacional', 'Arte y creatividad', 'Eventos históricos', 'Psicología y emociones', 'Medio ambiente y ecología'],
-                'B2': ['Política y sociedad', 'Economía y finanzas', 'Ciencia e investigación', 'Filosofía y pensamiento', 'Psicología y comportamiento', 'Globalización e interculturalidad', 'Desarrollo sostenible', 'Literatura y narrativa', 'Derechos humanos y justicia', 'Innovación y emprendimiento'],
-                'C1': ['Crítica cultural', 'Retórica y argumentación', 'Antropología social', 'Investigación académica', 'Análisis del discurso', 'Filosofía política'],
-                'C2': ['Especialización académica', 'Debate y oratoria', 'Creación literaria', 'Análisis crítico avanzado', 'Teoría del conocimiento']
-            }
-        };
-        this._VERSION_DEFECTO = 'v3.0';
-        
-        // 🔥 DETECTAR MODO APK
-        this._detectarModoAPK();
-    }
-
-    // ============================================================
-    // DETECTAR MODO APK
-    // ============================================================
+(function() {
+    'use strict';
     
-    _detectarModoAPK() {
-        this._esModoAPK = window.location && window.location.protocol === 'file:';
-        if (this._esModoAPK) {
-            console.log('📱 Modo APK detectado');
-        }
+    if (window.UIStudy && window.UIStudy._version === '24.1') {
+        console.log('⚠️ UIStudy ya está cargado, saltando...');
+        return;
     }
 
-    // ============================================================
-    // MÉTODOS DE UTILIDAD
-    // ============================================================
-
-    _esJeroglifico(idioma) {
-        if (!idioma) return false;
-        const idiomaLower = idioma.toLowerCase().trim();
-        return this._IDIOMAS_JEROGLIFICOS.some(item =>
-            idiomaLower.includes(item) || item.includes(idiomaLower)
-        );
-    }
-
-    _getNombreIdioma(idioma) {
-        const nombres = {
-            'es': 'Español',
-            'en': 'Inglés',
-            'fr': 'Francés',
-            'de': 'Alemán',
-            'it': 'Italiano',
-            'pt': 'Portugués',
-            'zh': 'Chino',
-            'ja': 'Japonés',
-            'ko': 'Coreano',
-            'ru': 'Ruso',
-            'ar': 'Árabe',
-            'hi': 'Hindi'
-        };
-        return nombres[idioma] || idioma;
-    }
-
-    // 🔥 OBTENER CÓDIGO ISO REAL DESDE EL IDIOMA
-    _obtenerCodigoIso(idioma) {
-        if (!idioma) return 'es';
-        
-        const idiomaLower = idioma.toLowerCase().trim();
-        
-        // Si ya es un código ISO de 2 letras, devolverlo
-        if (/^[a-z]{2}$/.test(idiomaLower)) {
-            return idiomaLower;
-        }
-        
-        // Buscar en el mapa de nombres a códigos ISO
-        if (this._MAP_NOMBRE_A_ISO[idiomaLower]) {
-            return this._MAP_NOMBRE_A_ISO[idiomaLower];
-        }
-        
-        // Intentar obtener el código ISO del gestor de idiomas
-        if (window.gestorIdiomas && typeof window.gestorIdiomas.obtenerCodigoIso === 'function') {
-            const iso = window.gestorIdiomas.obtenerCodigoIso(idioma);
-            if (iso) return iso;
-        }
-        
-        // Fallback: usar el idioma como está
-        return idioma;
-    }
-
-    // 🔥 OBTENER IDIOMA ACTIVO CON PERSISTENCIA
-    _obtenerIdiomaActivoPersistente() {
-        try {
-            // 1. Intentar obtener del gestor de idiomas
-            if (window.gestorIdiomas && typeof window.gestorIdiomas.getIdiomaActivo === 'function') {
-                const idioma = window.gestorIdiomas.getIdiomaActivo();
-                if (idioma) {
-                    localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-                    return idioma;
-                }
-            }
+    class UIStudy {
+        constructor() {
+            this._version = '24.1';
+            this._modoEstudio = 'flashcard';
+            this._pistaActual = '';
+            this._opcionesMultiple = [];
+            this._mostrandoRespuesta = false;
+            this._ultimaRespuesta = null;
+            this._confianza = 0.5;
+            this.GRUPO_USUARIO = '📌 Seleccionadas por Usuario';
+            this._metodoValidacion = 'offline';
+            this._renderizando = false;
+            this._guardandoIndice = false;
+            this._generandoOpciones = false;
+            this._IDIOMAS_JEROGLIFICOS = ['zh', 'ja', 'ko', 'chino', 'japonés', 'coreano', 'chinese', 'japanese', 'korean', 'mandarin', 'mandarín'];
+            this._idiomaNativo = 'es';
+            this._cacheTranscripciones = {};
             
-            // 2. Intentar obtener de localStorage (persistencia entre recargas)
-            const localIdioma = localStorage.getItem(this._KEY_IDIOMA_ACTIVO);
-            if (localIdioma) {
-                console.log(`📌 Idioma recuperado de localStorage: ${localIdioma}`);
-                return localIdioma;
-            }
+            this._modoVista = 'frase';
+            this._historiaActual = [];
+            this._historiaTitulo = '';
+            this._historiaIdActual = null;
+            this._libroAbierto = false;
+            this._generandoFrases = false;
+            this._cerrandoLibro = false;
+            this._frasesGeneradas = [];
+            this._frasesTraducidas = {};
+            this._frasesGuardadas = {};
+            this._traduciendoFrase = false;
+            this._historiasLeidas = new Set();
             
-            // 3. Intentar obtener del usuario en IndexedDB
-            const usuarioLocal = localStorage.getItem(this._KEY_USUARIO);
-            if (usuarioLocal) {
-                try {
+            this._temaFinalizado = false;
+            this._temaCompletadoCallback = null;
+            this._verificandoProgreso = false;
+            this._progresoMostrado = 0;
+            this._temaIdDesdeLibro = null;
+            this._temaIdDesdeHistoria = null;
+            this._estudiandoTemaDesdeLibro = false;
+            this._origenHistoriaActual = null;
+            
+            this._renderTimeout = null;
+            this._palabrasCache = {};
+            this._enlaceIntentos = 0;
+            this._maxEnlaceIntentos = 5;
+            this._eventosEnlazados = false;
+            
+            this._palabraModalActual = null;
+            this._modalAvanzadoAbierto = false;
+            
+            this._origenAccion = null;
+            
+            // 🔥 CONTROL DE PROGRESO
+            this._ultimaActualizacionProgreso = 0;
+            this._progresoRecargado = false;
+        }
+
+        // ============================================================
+        // MÉTODOS DE UTILIDAD
+        // ============================================================
+
+        _esJeroglifico(idioma) {
+            if (!idioma) return false;
+            const idiomaLower = idioma.toLowerCase().trim();
+            return this._IDIOMAS_JEROGLIFICOS.some(item => 
+                idiomaLower.includes(item) || item.includes(idiomaLower)
+            );
+        }
+
+        _getNombreIdioma(idioma) {
+            const nombres = {
+                'es': 'Español',
+                'en': 'Inglés',
+                'fr': 'Francés',
+                'de': 'Alemán',
+                'it': 'Italiano',
+                'pt': 'Portugués',
+                'zh': 'Chino',
+                'ja': 'Japonés',
+                'ko': 'Coreano',
+                'ru': 'Ruso',
+                'ar': 'Árabe',
+                'hi': 'Hindi'
+            };
+            return nombres[idioma] || idioma;
+        }
+
+        _obtenerNivelRealUsuario() {
+            try {
+                const infoActivo = window.gestorIdiomas?.getInfoActivo?.();
+                if (infoActivo?.nivel) return infoActivo.nivel;
+                const usuarioLocal = localStorage.getItem('pipeline_usuario');
+                if (usuarioLocal) {
                     const parsed = JSON.parse(usuarioLocal);
-                    if (parsed.idiomasObjetivo && parsed.idiomasObjetivo.length > 0) {
-                        const idioma = parsed.idiomasObjetivo[0].idioma;
-                        localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-                        return idioma;
-                    }
-                } catch (e) {}
+                    const idiomaActivo = window.gestorIdiomas?.getIdiomaActivo?.() || 'es';
+                    const idiomaObj = parsed.idiomasObjetivo?.find(i => i.idioma === idiomaActivo);
+                    if (idiomaObj?.nivel) return idiomaObj.nivel;
+                    if (parsed.idiomasObjetivo?.length > 0) return parsed.idiomasObjetivo[0].nivel || 'B1';
+                }
+                return 'B1';
+            } catch (e) {
+                return 'B1';
             }
-            
-            // 4. Fallback: español
-            return 'es';
-        } catch (e) {
-            console.warn('⚠️ Error obteniendo idioma activo:', e);
-            return 'es';
         }
-    }
 
-    // 🔥 GUARDAR IDIOMA ACTIVO CON PERSISTENCIA
-    async _guardarIdiomaActivoPersistente(idioma) {
-        try {
-            console.log(`💾 Guardando idioma activo: ${idioma}`);
-            
-            // 1. Guardar en localStorage
-            localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-            localStorage.setItem(this._KEY_IDIOMA_SELECCIONADO, idioma);
-            
-            // 2. Guardar en gestor de idiomas
-            if (window.gestorIdiomas && typeof window.gestorIdiomas.cambiarIdioma === 'function') {
-                await window.gestorIdiomas.cambiarIdioma(idioma);
-            }
-            
-            // 3. Guardar en el usuario de IndexedDB
+        _getColorFiabilidad(fiabilidad) {
+            if (fiabilidad >= 80) return '#6C5CE7';
+            if (fiabilidad >= 60) return '#00B894';
+            if (fiabilidad >= 40) return '#FDCB6E';
+            if (fiabilidad >= 20) return '#E17055';
+            return '#FF7675';
+        }
+
+        _getColorFamiliaSemantica(familia) {
+            const colores = {
+                'Transporte': '#0984E3',
+                'Comida y Bebida': '#E17055',
+                'Familia': '#6C5CE7',
+                'Casa y Hogar': '#00CEC9',
+                'Ropa': '#FD79A8',
+                'Animales': '#00B894',
+                'Naturaleza': '#55EFC4',
+                'Tiempo y Clima': '#74B9FF',
+                'Salud': '#FF7675',
+                'Trabajo': '#636E72',
+                'Educación': '#A29BFE',
+                'Deportes': '#FDCB6E',
+                'Arte': '#E17055',
+                'Música': '#FD79A8',
+                'Tecnología': '#0984E3',
+                'Viajes': '#00CEC9',
+                'Compras': '#FDCB6E',
+                'Comunicación': '#74B9FF',
+                'Emociones': '#FF7675',
+                'Rutina': '#636E72',
+                'Ciudad': '#00B894',
+                'Cultura': '#6C5CE7',
+                'Historia': '#E17055',
+                'Ciencia': '#0984E3',
+                'General': '#636E72'
+            };
+            return colores[familia] || '#636E72';
+        }
+
+        _getColorFamiliaGramatical(familia) {
+            const colores = {
+                'sustantivo': '#6C5CE7',
+                'verbo': '#00B894',
+                'adjetivo': '#FDCB6E',
+                'adverbio': '#74B9FF',
+                'preposición': '#FF7675',
+                'conjunción': '#A29BFE',
+                'pronombre': '#55EFC4',
+                'determinante': '#0984E3',
+                'interjección': '#E17055',
+                'numeral': '#00CEC9',
+                'clasificador': '#636E72',
+                'partícula': '#636E72',
+                'expresión': '#FDCB6E',
+                'conector': '#74B9FF'
+            };
+            return colores[familia] || '#6C5CE7';
+        }
+
+        // ============================================================
+        // OBTENER IDIOMA NATIVO
+        // ============================================================
+
+        async _obtenerIdiomaNativo() {
             try {
                 const usuario = await db.getUsuario();
-                if (usuario) {
-                    if (!usuario.idiomasObjetivo) {
-                        usuario.idiomasObjetivo = [];
+                if (usuario?.idiomaNativo) {
+                    this._idiomaNativo = usuario.idiomaNativo;
+                    return this._idiomaNativo;
+                }
+                const localData = localStorage.getItem('pipeline_usuario');
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    if (parsed?.idiomaNativo) {
+                        this._idiomaNativo = parsed.idiomaNativo;
+                        return this._idiomaNativo;
                     }
-                    
-                    // Verificar si el idioma ya existe en la lista
-                    const existente = usuario.idiomasObjetivo.find(i => i.idioma === idioma);
-                    if (!existente) {
-                        usuario.idiomasObjetivo.push({
-                            idioma: idioma,
-                            nivel: 'A1',
-                            versionEstandar: 'v3.0'
-                        });
-                    }
-                    
-                    // Marcar este idioma como activo
-                    usuario.idiomaActivo = idioma;
-                    await db.guardarUsuario(usuario);
-                    
-                    // Actualizar localStorage
-                    localStorage.setItem(this._KEY_USUARIO, JSON.stringify(usuario));
-                    console.log(`✅ Usuario actualizado con idioma activo: ${idioma}`);
+                }
+                return 'es';
+            } catch (e) {
+                return 'es';
+            }
+        }
+
+        // ============================================================
+        // OBTENER TRANSCRIPCIÓN
+        // ============================================================
+
+        async _obtenerTranscripcionFrase(frase) {
+            if (!frase) return '';
+            try {
+                const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                const esJeroglifico = this._esJeroglifico(idioma);
+                if (esJeroglifico) {
+                    return frase.pinyinCompleto || frase.segmentacion?.pinyin || '';
+                }
+                return frase.transcripcion || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        async _obtenerTranscripcionPalabra(palabra) {
+            if (!palabra) return '';
+            try {
+                const idioma = palabra.idioma || pipeline.idiomaObjetivo || 'es';
+                const esJeroglifico = this._esJeroglifico(idioma);
+                if (esJeroglifico) {
+                    return palabra.pinyin || '';
+                }
+                return palabra.transcripcion || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // ============================================================
+        // RENDERIZAR TRANSCRIPCIÓN
+        // ============================================================
+
+        _renderizarTranscripcion(transcripcion, esJeroglifico = false) {
+            if (!transcripcion) return '';
+            const icono = esJeroglifico ? '🔊' : '🎤';
+            const bg = esJeroglifico ? 'var(--primary)08' : 'var(--secondary)08';
+            const border = esJeroglifico ? 'var(--primary)30' : 'var(--secondary)30';
+            const color = esJeroglifico ? 'var(--primary)' : 'var(--secondary)';
+            return `
+                <div style="
+                    font-size: 15px;
+                    color: ${color};
+                    margin-top: 4px;
+                    letter-spacing: 1px;
+                    font-weight: 500;
+                    padding: 4px 14px;
+                    background: ${bg};
+                    border-radius: 8px;
+                    display: inline-block;
+                    border: 1px solid ${border};
+                    font-family: var(--font);
+                ">
+                    ${icono} ${transcripcion}
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // INICIALIZACIÓN
+        // ============================================================
+
+        async init(core) {
+            this.core = core;
+            await this._obtenerIdiomaNativo();
+            this._cargarHistoriasLeidas();
+            return this;
+        }
+
+        // ============================================================
+        // GESTIÓN DE HISTORIAS LEÍDAS
+        // ============================================================
+
+        _cargarHistoriasLeidas() {
+            try {
+                const data = localStorage.getItem('pipeline_historias_leidas');
+                if (data) {
+                    this._historiasLeidas = new Set(JSON.parse(data));
+                    console.log(`📚 ${this._historiasLeidas.size} historias leídas cargadas`);
                 }
             } catch (e) {
-                console.warn('⚠️ Error guardando en IndexedDB:', e);
-            }
-            
-            // 4. Disparar evento de cambio de idioma
-            window.dispatchEvent(new CustomEvent('idiomaCambiado', {
-                detail: { 
-                    idioma: idioma,
-                    persistente: true,
-                    timestamp: Date.now()
-                }
-            }));
-            
-            console.log(`✅ Idioma "${idioma}" guardado persistentemente`);
-            
-        } catch (error) {
-            console.error('❌ Error guardando idioma activo:', error);
-        }
-    }
-
-    // 🔥 SINCRONIZAR IDIOMA EN CARGA INICIAL
-    async _sincronizarIdiomaInicial() {
-        try {
-            let idioma = localStorage.getItem(this._KEY_IDIOMA_ACTIVO);
-            
-            if (!idioma && window.gestorIdiomas) {
-                idioma = window.gestorIdiomas.getIdiomaActivo();
-                if (idioma) {
-                    localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-                }
-            }
-            
-            if (!idioma) {
-                const usuario = await db.getUsuario();
-                if (usuario && usuario.idiomasObjetivo && usuario.idiomasObjetivo.length > 0) {
-                    idioma = usuario.idiomasObjetivo[0].idioma;
-                    localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-                } else {
-                    idioma = 'es';
-                    localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-                }
-            }
-            
-            if (window.gestorIdiomas && idioma !== window.gestorIdiomas.getIdiomaActivo()) {
-                await window.gestorIdiomas.cambiarIdioma(idioma);
-            }
-            
-            console.log(`🔄 Idioma inicial sincronizado: ${idioma}`);
-            return idioma;
-            
-        } catch (error) {
-            console.warn('⚠️ Error sincronizando idioma inicial:', error);
-            return 'es';
-        }
-    }
-
-    _obtenerNivelRealUsuario() {
-        try {
-            const infoActivo = window.gestorIdiomas?.getInfoActivo?.();
-            if (infoActivo?.nivel) return infoActivo.nivel;
-            const usuarioLocal = localStorage.getItem('pipeline_usuario');
-            if (usuarioLocal) {
-                const parsed = JSON.parse(usuarioLocal);
-                const idiomaActivo = window.gestorIdiomas?.getIdiomaActivo?.() || 'es';
-                const idiomaObj = parsed.idiomasObjetivo?.find(i => i.idioma === idiomaActivo);
-                if (idiomaObj?.nivel) return idiomaObj.nivel;
-                if (parsed.idiomasObjetivo?.length > 0) return parsed.idiomasObjetivo[0].nivel || 'B1';
-            }
-            return 'B1';
-        } catch (e) {
-            return 'B1';
-        }
-    }
-
-    _obtenerIdiomaNativo() {
-        try {
-            const usuario = JSON.parse(localStorage.getItem('pipeline_usuario') || '{}');
-            return usuario.idiomaNativo || 'español';
-        } catch (e) {
-            return 'español';
-        }
-    }
-
-    _getCore() {
-        if (this.core) return this.core;
-        if (window.uiCore) return window.uiCore;
-        return null;
-    }
-
-    // ============================================================
-    // OBTENER VERSIONES
-    // ============================================================
-
-    _obtenerVersionesDisponibles(idioma) {
-        if (window.gestorIdiomas && typeof window.gestorIdiomas.obtenerVersionesDisponibles === 'function') {
-            return window.gestorIdiomas.obtenerVersionesDisponibles(idioma);
-        }
-        return [
-            { id: 'v2.0', nombre: 'HSK 2.0 (Clásico)' },
-            { id: 'v3.0', nombre: 'HSK 3.0 (Nuevo)' }
-        ];
-    }
-
-    _obtenerVersionActiva(idioma) {
-        if (window.gestorIdiomas && typeof window.gestorIdiomas.obtenerVersionActiva === 'function') {
-            return window.gestorIdiomas.obtenerVersionActiva(idioma);
-        }
-        return 'v3.0';
-    }
-
-    _obtenerNombreVersion(idioma, version) {
-        if (window.gestorIdiomas && typeof window.gestorIdiomas.obtenerNombreVersion === 'function') {
-            return window.gestorIdiomas.obtenerNombreVersion(idioma, version);
-        }
-        const nombres = { 'v2.0': 'HSK 2.0', 'v3.0': 'HSK 3.0' };
-        return nombres[version] || version;
-    }
-
-    _obtenerDescripcionVersion(idioma, version) {
-        if (window.gestorIdiomas && typeof window.gestorIdiomas.obtenerDescripcionVersion === 'function') {
-            return window.gestorIdiomas.obtenerDescripcionVersion(idioma, version);
-        }
-        const descripciones = { 'v2.0': '150 palabras en A1, 300 en A2', 'v3.0': '500 palabras en A1, 1200 en A2', 'v1.0': 'Estándar MCER' };
-        return descripciones[version] || '';
-    }
-
-    async _cambiarVersionIdioma(idioma, nuevaVersion) {
-        try {
-            const result = await window.gestorIdiomas.cambiarVersionIdioma(idioma, nuevaVersion);
-            if (result) {
-                this._core?.mostrarToast(`✅ Versión de "${idioma}" cambiada a ${nuevaVersion}`, 'success');
-                await this._recargarConfiguracion();
-                if (window.UITemas) { await window.UITemas._renderTemas(); }
-                if (window.UIJSON) { window.UIJSON._actualizarIdiomaYNivel(); }
-            } else {
-                this._core?.mostrarToast('❌ Error cambiando versión', 'error');
-            }
-        } catch (e) {
-            console.error('❌ Error:', e);
-            this._core?.mostrarToast('❌ Error: ' + e.message, 'error');
-        }
-    }
-
-    // ============================================================
-    // ACTUALIZAR VERSIONES DE IDIOMAS
-    // ============================================================
-
-    async _actualizarVersionesIdiomas(forzar = false) {
-        if (this._actualizandoVersiones) {
-            this.core?.mostrarToast('⏳ Ya hay una actualización en curso...', 'info');
-            return;
-        }
-        if (!window.vigia || !window.vigia.enLinea) {
-            this.core?.mostrarToast('❌ Vigía está offline. Conéctate a internet para actualizar.', 'error');
-            return;
-        }
-        this._actualizandoVersiones = true;
-        this.core?.mostrarToast('🔍 Buscando últimas versiones de idiomas...', 'info');
-        try {
-            const resultados = await window.gestorIdiomas.actualizarTodasLasVersiones(forzar);
-            if (!resultados || resultados.length === 0) {
-                this.core?.mostrarToast('ℹ️ No hay idiomas para actualizar', 'info');
-                this._actualizandoVersiones = false;
-                return;
-            }
-            const exitos = resultados.filter(r => r.exito).length;
-            const fallos = resultados.filter(r => !r.exito).length;
-            let mensaje = `✅ Actualización completada\n\n📊 ${exitos} idiomas actualizados correctamente\n`;
-            if (fallos > 0) mensaje += `⚠️ ${fallos} idiomas no se pudieron actualizar\n`;
-            for (const r of resultados) {
-                if (r.exito && r.version) {
-                    mensaje += `\n🌍 ${r.idioma}: ${r.version.nombre || r.version.version}`;
-                }
-            }
-            this.core?.alert(mensaje, '📊 Actualización de Versiones');
-            this._ultimaActualizacionVersiones = Date.now();
-            await this._recargarConfiguracion();
-            if (window.UITemas) { await window.UITemas._renderTemas(); }
-        } catch (error) {
-            console.error('❌ Error actualizando versiones:', error);
-            this.core?.mostrarToast('❌ Error: ' + error.message, 'error');
-        } finally {
-            this._actualizandoVersiones = false;
-        }
-    }
-
-    async _verificarActualizacionesDisponibles() {
-        if (!window.vigia || !window.vigia.enLinea) {
-            this.core?.mostrarToast('⚠️ Vigía offline. Conéctate para verificar.', 'warning');
-            return;
-        }
-        this.core?.mostrarToast('🔍 Verificando actualizaciones disponibles...', 'info');
-        try {
-            const actualizaciones = await window.gestorIdiomas.verificarActualizacionesDisponibles();
-            if (!actualizaciones || actualizaciones.length === 0) {
-                this.core?.mostrarToast('✅ Todos los idiomas están actualizados.', 'success');
-                return;
-            }
-            let mensaje = `📢 Actualizaciones disponibles:\n\n`;
-            for (const act of actualizaciones) {
-                mensaje += `🌍 ${act.idioma}\n   📌 ${act.versionActual} → ${act.versionNueva}\n   📝 ${act.nombreVersion}\n   💡 ${act.descripcion || 'Actualización disponible'}\n\n`;
-            }
-            mensaje += `¿Quieres actualizar todos los idiomas ahora?`;
-            const confirmar = await this.core?.confirm(mensaje, '📢 Actualizaciones Disponibles');
-            if (confirmar) {
-                await this._actualizarVersionesIdiomas(true);
-                if (window.UITemas) { setTimeout(() => window.UITemas._renderTemas(), 300); }
-            }
-        } catch (error) {
-            console.error('❌ Error verificando actualizaciones:', error);
-            this.core?.mostrarToast('❌ Error: ' + error.message, 'error');
-        }
-    }
-
-    // ============================================================
-    // INICIALIZACIÓN
-    // ============================================================
-
-    async init(core) {
-        this.core = core;
-        if (!this._eventosConfigurados) {
-            this._configurarEventosSincronizacion();
-            this._eventosConfigurados = true;
-        }
-        return this;
-    }
-
-    cargar(core) {
-        this.core = core;
-        this._cargarConfiguracion();
-    }
-
-    // ============================================================
-    // CONFIGURAR EVENTOS DE SINCRONIZACIÓN
-    // ============================================================
-    
-    _configurarEventosSincronizacion() {
-        console.log('🔗 Configurando sincronización de idiomas...');
-        window.addEventListener('idiomaCambiado', async (e) => {
-            console.log('🔄 Configuración detectó cambio de idioma:', e.detail?.idioma);
-            await this._recargarConfiguracion();
-        });
-        window.addEventListener('idiomaAgregado', async (e) => {
-            console.log('🔄 Configuración detectó idioma agregado:', e.detail?.idioma);
-            await this._recargarConfiguracion();
-        });
-        window.addEventListener('idiomaEliminado', async (e) => {
-            console.log('🔄 Configuración detectó idioma eliminado:', e.detail?.idioma);
-            await this._recargarConfiguracion();
-        });
-        window.addEventListener('nivelIdiomaCambiado', async (e) => {
-            console.log('🔄 Configuración detectó cambio de nivel:', e.detail?.idioma, e.detail?.nivel);
-            await this._recargarConfiguracion();
-        });
-        window.addEventListener('idiomaNativoCambiado', async (e) => {
-            console.log('🔄 Configuración detectó cambio de idioma nativo:', e.detail?.idiomaNativo);
-            await this._recargarConfiguracion();
-            if (modoInverso) {
-                modoInverso._idiomaNativo = e.detail?.idiomaNativo?.nombre || 'es';
-            }
-        });
-        window.addEventListener('tutorModoCambiado', (e) => {
-            if (this._recargando) return;
-            this._cargarConfiguracion();
-        });
-        window.addEventListener('versionIdiomaCambiada', async (e) => {
-            console.log('🔄 Configuración detectó cambio de versión:', e.detail?.idioma, e.detail?.versionNueva);
-            await this._recargarConfiguracion();
-            if (window.UITemas) { await window.UITemas._renderTemas(); }
-            if (window.UIJSON) { window.UIJSON._actualizarIdiomaYNivel(); }
-        });
-        window.addEventListener('versionIdiomaActualizada', async (e) => {
-            console.log('🔄 Versión actualizada desde Groq:', e.detail?.idioma, e.detail?.nombreVersion);
-            await this._recargarConfiguracion();
-            if (window.UITemas) { setTimeout(() => window.UITemas._renderTemas(), 300); }
-        });
-        console.log('✅ Sincronización de idiomas configurada');
-    }
-
-    // ============================================================
-    // RECARGAR CONFIGURACIÓN - CORREGIDA CON PERSISTENCIA
-    // ============================================================
-    
-    async _recargarConfiguracion() {
-        if (this._recargando) {
-            console.log('⏳ Ya está recargando');
-            return;
-        }
-        
-        this._recargando = true;
-        console.log('🔄 Recargando configuración...');
-        
-        try {
-            // 🔥 CARGAR IDIOMA PERSISTENTE
-            const idiomaPersistente = localStorage.getItem(this._KEY_IDIOMA_ACTIVO) || 'es';
-            
-            await gestorIdiomas._cargarIdiomas();
-            await gestorIdiomas._cargarIdiomasNativos();
-            
-            // 🔥 VERIFICAR Y CORREGIR IDIOMA ACTIVO
-            const idiomas = gestorIdiomas.getIdiomas();
-            let idiomaActivo = gestorIdiomas.getIdiomaActivo();
-            
-            if (idiomaActivo !== idiomaPersistente) {
-                const idiomaExiste = idiomas.some(i => i.idioma === idiomaPersistente);
-                if (idiomaExiste) {
-                    await gestorIdiomas.cambiarIdioma(idiomaPersistente);
-                    idiomaActivo = idiomaPersistente;
-                } else if (idiomas.length > 0) {
-                    await gestorIdiomas.cambiarIdioma(idiomas[0].idioma);
-                    idiomaActivo = idiomas[0].idioma;
-                    localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idiomaActivo);
-                } else {
-                    const usuarioLocal = localStorage.getItem('pipeline_usuario');
-                    if (usuarioLocal) {
-                        try {
-                            const parsed = JSON.parse(usuarioLocal);
-                            if (parsed.idiomasObjetivo && parsed.idiomasObjetivo.length > 0) {
-                                const idiomaDefault = parsed.idiomasObjetivo[0].idioma;
-                                localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idiomaDefault);
-                                idiomaActivo = idiomaDefault;
-                            }
-                        } catch (e) {}
-                    }
-                }
-            }
-            
-            if (idiomaActivo) {
-                localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idiomaActivo);
-                localStorage.setItem(this._KEY_IDIOMA_SELECCIONADO, idiomaActivo);
-            }
-            
-            await this._cargarConfiguracion();
-            
-            if (window.uiCore && window.uiCore._actualizarIndicadoresSeguro) {
-                window.uiCore._actualizarIndicadoresSeguro();
-            }
-            
-            this._actualizarNivelHeader();
-            console.log(`✅ Configuración recargada correctamente. Idioma: ${idiomaActivo}`);
-            
-        } catch (error) {
-            console.error('❌ Error recargando configuración:', error);
-        } finally {
-            this._recargando = false;
-        }
-    }
-
-    // ============================================================
-    // CARGA PRINCIPAL DE CONFIGURACIÓN - CORREGIDA CON PERSISTENCIA
-    // ============================================================
-    
-    async _cargarConfiguracion() {
-        const container = document.getElementById('configContent');
-        if (!container) return;
-
-        // 🔥 SINCRONIZAR IDIOMA INICIAL
-        const idiomaSincronizado = await this._sincronizarIdiomaInicial();
-        
-        // 🔥 OBTENER IDIOMA ACTIVO DE FORMA PERSISTENTE
-        const activo = this._obtenerIdiomaActivoPersistente();
-        
-        if (activo !== idiomaSincronizado) {
-            await this._guardarIdiomaActivoPersistente(idiomaSincronizado);
-        }
-
-        const usuario = await db.getUsuario();
-        const idiomas = gestorIdiomas.getIdiomas();
-        
-        if (window.gestorIdiomas) {
-            const gestorActivo = window.gestorIdiomas.getIdiomaActivo();
-            if (gestorActivo !== activo) {
-                await window.gestorIdiomas.cambiarIdioma(activo);
-            }
-        }
-        
-        const idiomasNativos = await gestorIdiomas.obtenerIdiomasNativos();
-        const stats = await db.obtenerEstadisticasNeuro(activo);
-        const progreso = await db.obtenerTodoProgreso();
-        const temas = await db.obtenerTemasPorIdioma(activo);
-        const historias = await db.obtenerHistoriasPorIdioma(activo);
-        const nivelReal = this._obtenerNivelRealUsuario();
-        const esJeroglifico = this._esJeroglifico(activo);
-        const nombreIdioma = this._getNombreIdioma(activo);
-
-        const versionActiva = this._obtenerVersionActiva(activo);
-        const nombreVersion = this._obtenerNombreVersion(activo, versionActiva);
-
-        let hayActualizaciones = false;
-        let actualizacionesPendientes = [];
-        try {
-            actualizacionesPendientes = await gestorIdiomas.verificarActualizacionesDisponibles();
-            hayActualizaciones = actualizacionesPendientes.length > 0;
-        } catch (e) {}
-
-        const progresoNiveles = {};
-        if (activo && window.UITemas && window.UITemas._TEMAS_PREDEFINIDOS) {
-            const niveles = window.UITemas._NIVELES;
-            for (const nivel of niveles) {
-                const progresoNivel = await window.UITemas._obtenerProgresoNivel(activo, nivel, versionActiva);
-                progresoNiveles[nivel] = progresoNivel;
+                this._historiasLeidas = new Set();
             }
         }
 
-        const tutorInfo = window.tutorNeuro ? window.tutorNeuro.getModoInfo() : null;
-
-        let html = `
-            <div class="config-container neuro-control-center" style="padding:0;width:100%;max-width:100%;box-sizing:border-box;">
-                <!-- Cabecera con botones de versión -->
-                <div class="config-header" style="background:linear-gradient(135deg,var(--primary)06,var(--secondary)06);border-radius:12px;padding:16px 20px;margin-bottom:16px;border:2px solid var(--primary)20;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-                        <div>
-                            <h2 style="font-size:18px;font-weight:800;color:var(--dark);margin:0;"><i class="fas fa-sliders-h"></i> Centro de Control Neuro</h2>
-                            <p style="font-size:12px;color:var(--gray);margin:2px 0 0;">Gestiona tu perfil, idiomas, tutor y visualiza tu progreso de aprendizaje.</p>
-                            <p style="font-size:11px;color:var(--secondary);margin-top:2px;">
-                                📌 Versión del estándar: <strong>${nombreVersion}</strong>
-                                ${hayActualizaciones ? ` 🔔 ${actualizacionesPendientes.length} actualizaciones disponibles` : ' ✅ Actualizado'}
-                            </p>
-                            <p style="font-size:10px;color:var(--gray-light);margin-top:2px;">
-                                🌍 Idioma activo: <strong style="color:var(--primary);">${nombreIdioma}</strong> (${activo})
-                            </p>
-                        </div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            ${hayActualizaciones ? `
-                                <button class="btn-primary" onclick="window.UIConfig._verificarActualizacionesDisponibles()" 
-                                        style="padding:8px 16px;font-size:12px;background:linear-gradient(135deg,#FDCB6E,#E17055);color:white;border:none;border-radius:8px;cursor:pointer;animation:pulse 2s ease-in-out infinite;">
-                                    <i class="fas fa-bell"></i> ${actualizacionesPendientes.length} Actualizaciones
-                                </button>
-                            ` : ''}
-                            <button class="btn-secondary" onclick="window.UIConfig._actualizarVersionesIdiomas(false)" 
-                                    style="padding:8px 16px;font-size:12px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;">
-                                <i class="fas fa-sync"></i> Actualizar Versiones
-                            </button>
-                            <button class="btn-secondary" onclick="window.UIConfig._verificarActualizacionesDisponibles()" 
-                                    style="padding:8px 16px;font-size:12px;background:var(--bg);border:1px solid var(--light);border-radius:8px;cursor:pointer;">
-                                <i class="fas fa-search"></i> Verificar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Sección: Tutor Neuro -->
-                <div class="config-section tutor-config-section" style="margin-bottom:16px;border:2px solid var(--primary)20;border-radius:14px;padding:16px 20px;background:linear-gradient(135deg, var(--primary)04, var(--secondary)04);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:8px;">
-                        <div style="display:flex;align-items:center;gap:12px;">
-                            <span style="font-size:32px;">🧠</span>
-                            <div>
-                                <h3 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">Tutor Neuro</h3>
-                                <p style="font-size:12px;color:var(--gray);margin:2px 0 0;">
-                                    ${tutorInfo ? `${tutorInfo.icono} ${tutorInfo.nombre}` : 'Cargando...'}
-                                    <span style="font-size:11px;color:var(--gray-light);margin-left:8px;">| Elige cómo quieres que el tutor te guíe</span>
-                                </p>
-                            </div>
-                        </div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <span style="font-size:11px;padding:4px 12px;border-radius:12px;background:${tutorInfo ? tutorInfo.color + '20' : 'var(--bg)'};color:${tutorInfo ? tutorInfo.color : 'var(--gray)'};">
-                                ${tutorInfo ? tutorInfo.icono : '🧠'} ${tutorInfo ? tutorInfo.nombre : 'Cargando...'}
-                            </span>
-                        </div>
-                    </div>
-                    
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">
-                        ${this._renderTarjetasModosTutor()}
-                    </div>
-                    
-                    <div style="background:var(--bg);border-radius:8px;padding:10px 14px;border-left:4px solid ${tutorInfo ? tutorInfo.color : 'var(--primary)'};">
-                        <div style="font-size:12px;font-weight:600;color:var(--gray);" id="tutorModoDescripcion">
-                            ${this._getModoDescripcion()}
-                        </div>
-                        ${tutorInfo ? `
-                            <div style="font-size:11px;color:var(--gray-light);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;">
-                                ${tutorInfo.caracteristicas.map(c => `<span>${c}</span>`).join(' · ')}
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-
-                <!-- Sección: Botón Super Power -->
-                <div style="background:linear-gradient(135deg, #6C5CE7, #00CEC9);border-radius:14px;padding:20px 24px;margin-bottom:16px;box-shadow:0 4px 30px rgba(108,92,231,0.25);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;">
-                        <div style="display:flex;align-items:center;gap:14px;">
-                            <div style="font-size:40px;animation:pulse 2s ease-in-out infinite;">⚡</div>
-                            <div>
-                                <h3 style="font-size:18px;font-weight:800;color:white;margin:0;">Botón Super Power</h3>
-                                <p style="font-size:13px;color:rgba(255,255,255,0.85);margin:2px 0 0;">
-                                    Genera un JSON completo con <strong>TODO</strong> el contenido para el nivel ${nivelReal} de ${nombreIdioma}
-                                    ${esJeroglifico ? '🀄 (incluye caracteres y familias)' : ''}
-                                    <span style="font-size:11px;color:rgba(255,255,255,0.6);margin-left:8px;">📌 ${nombreVersion}</span>
-                                </p>
-                                <p style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">
-                                    🎤 Incluye transcripción fonética en <strong>${this._obtenerIdiomaNativo()}</strong>
-                                </p>
-                                <p style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px;">
-                                    📝 <strong>INCLUYE TODAS LAS PALABRAS DESGLOSADAS</strong> para cada frase
-                                </p>
-                            </div>
-                        </div>
-                        <button class="btn-primary" onclick="window.UIConfig._generarSuperJSON()" 
-                                style="padding:12px 28px;font-size:16px;font-weight:700;background:white;color:#6C5CE7;border:none;border-radius:10px;cursor:pointer;transition:all 0.3s;box-shadow:0 4px 20px rgba(0,0,0,0.15);"
-                                onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 8px 30px rgba(0,0,0,0.25)'" 
-                                onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 20px rgba(0,0,0,0.15)'">
-                            <i class="fas fa-meteor"></i> ¡Generar JSON Completo!
-                        </button>
-                    </div>
-                    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;font-size:11px;color:rgba(255,255,255,0.7);">
-                        <span>📚 ${Object.keys(window.UITemas?.TEMAS_PREDEFINIDOS?.[versionActiva]?.[nivelReal] || {}).length || 0} temas</span>
-                        <span>📖 3-5 historias por tema</span>
-                        <span>📝 Vocabulario del nivel</span>
-                        ${esJeroglifico ? `<span>🀄 Caracteres y familias</span>` : ''}
-                        <span>📋 Reglas gramaticales</span>
-                        <span>🎯 Ejercicios y logros</span>
-                        <span>📌 ${nombreVersion}</span>
-                        <span>🎤 Transcripción fonética</span>
-                        <span>📝 Palabras desglosadas por frase</span>
-                    </div>
-                </div>
-
-                ${this._renderTarjetaImportacionTemasNivel(activo, nivelReal, nombreIdioma, versionActiva, nombreVersion)}
-
-                <!-- Sección: Perfil y Preferencias -->
-                <div class="config-section profile-section" style="background:var(--white);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow);margin-bottom:16px;border:2px solid var(--primary)20;">
-                    <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0 0 12px 0;"><i class="fas fa-user-circle"></i> Perfil y Preferencias</h3>
-                    <div class="config-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div class="config-item" style="display:flex;flex-direction:column;gap:4px;">
-                            <label style="font-size:12px;font-weight:600;color:var(--gray);"><i class="fas fa-user"></i> Nombre</label>
-                            <input type="text" id="configNombre" value="${usuario?.nombre || ''}" placeholder="Tu nombre" style="padding:8px 12px;border:2px solid var(--light);border-radius:8px;font-size:14px;">
-                        </div>
-                        <div class="config-item" style="display:flex;flex-direction:column;gap:4px;">
-                            <label style="font-size:12px;font-weight:600;color:var(--gray);"><i class="fas fa-language"></i> Idioma Nativo</label>
-                            <select id="configIdiomaNativo" style="padding:8px 12px;border:2px solid var(--light);border-radius:8px;font-size:14px;">
-                                ${idiomasNativos.map(n => `
-                                    <option value="${n.id}" ${n.esActivo ? 'selected' : ''}>
-                                        ${n.nombre}
-                                    </option>
-                                `).join('')}
-                            </select>
-                            <div style="display:flex;gap:6px;margin-top:4px;">
-                                <button class="btn-sm btn-primary" onclick="window.UIConfig._añadirIdiomaNativo()" style="padding:4px 12px;font-size:11px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">
-                                    <i class="fas fa-plus"></i> Añadir
-                                </button>
-                            </div>
-                        </div>
-                        <div class="config-item" style="grid-column: span 2;">
-                            <label style="font-size:12px;font-weight:600;color:var(--gray);"><i class="fas fa-bell"></i> Preferencias</label>
-                            <div class="preference-group" style="display:flex;gap:16px;flex-wrap:wrap;padding-top:4px;">
-                                <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="configAutoNivel" ${usuario?.nivelAuto !== false ? 'checked' : ''}> Subir de nivel automáticamente</label>
-                                <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="configNotificaciones" ${usuario?.notificaciones !== false ? 'checked' : ''}> Notificaciones de estudio</label>
-                                <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="checkbox" id="configRecordatorios" ${usuario?.recordatorios !== false ? 'checked' : ''}> Recordatorios de repaso</label>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn-primary" onclick="window.UIConfig._guardarConfigPerfil()" style="margin-top:12px;padding:8px 20px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
-                        <i class="fas fa-save"></i> Guardar Perfil
-                    </button>
-                </div>
-
-                <!-- Sección: Gestión de Idiomas -->
-                <div class="config-section languages-section" style="background:var(--white);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow);margin-bottom:16px;border:2px solid var(--primary)20;">
-                    <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0 0 12px 0;"><i class="fas fa-globe-americas"></i> Idiomas de Aprendizaje</h3>
-                    <div class="languages-grid" id="configIdiomasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
-                        ${this._renderTarjetasIdiomas(idiomas, activo)}
-                    </div>
-                    <button class="btn-primary" onclick="window.UIConfig._abrirModalAgregarIdioma()" style="margin-top:12px;padding:8px 20px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;">
-                        <i class="fas fa-plus-circle"></i> Añadir Nuevo Idioma
-                    </button>
-                </div>
-
-                <!-- Sección: Progreso de Niveles -->
-                <div class="config-section levels-progress-section" style="background:var(--white);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow);margin-bottom:16px;border:2px solid var(--primary)20;">
-                    <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0 0 12px 0;"><i class="fas fa-chart-line"></i> Progreso por Nivel (${activo || 'Idioma Activo'})</h3>
-                    <div class="levels-progress-grid" id="configLevelsProgress" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
-                        ${this._renderProgresoNiveles(progresoNiveles)}
-                    </div>
-                </div>
-
-                <!-- Sección: Estadísticas Visuales -->
-                <div class="config-section stats-section" style="background:var(--white);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow);margin-bottom:16px;border:2px solid var(--primary)20;">
-                    <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0 0 12px 0;"><i class="fas fa-chart-pie"></i> Estadísticas de Aprendizaje</h3>
-                    <div class="stats-grid-visual" id="configStatsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;">
-                        ${this._renderTarjetasEstadisticas(stats, progreso, temas, historias)}
-                    </div>
-                </div>
-
-                <!-- Sección: Historial -->
-                <div class="config-section history-section" style="background:var(--white);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow);margin-bottom:16px;border:2px solid var(--primary)20;">
-                    <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0 0 12px 0;"><i class="fas fa-history"></i> Historial de Niveles</h3>
-                    <div id="configHistorialNiveles" style="max-height:200px;overflow-y:auto;">
-                        <p style="color:var(--gray);font-size:13px;">Cargando historial...</p>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        container.innerHTML = html;
-        await this._cargarHistorialNiveles();
-        this._inicializarEventosConfiguracion();
-        
-        setTimeout(() => {
-            this._cargarArchivosTemasNivel();
-        }, 500);
-    }
-
-    // ============================================================
-    // RENDER TARJETAS DE MODOS DEL TUTOR
-    // ============================================================
-
-    _renderTarjetasModosTutor() {
-        if (!window.tutorNeuro) {
-            return `<div style="color:var(--gray);font-size:13px;padding:8px;">⚠️ Tutor Neuro no disponible</div>`;
-        }
-        const modoActual = window.tutorNeuro.getModo();
-        const modos = [
-            { id: 'guiado', icono: '🚀', nombre: 'Modo Guiado', descripcion: 'El tutor decide el camino', color: '#6C5CE7', bg: 'linear-gradient(135deg, #6C5CE7, #A29BFE)' },
-            { id: 'flexible', icono: '🧠', nombre: 'Modo Flexible', descripcion: 'El tutor sugiere, tú decides', color: '#00B894', bg: 'linear-gradient(135deg, #00B894, #55EFC4)' },
-            { id: 'libre', icono: '📴', nombre: 'Modo Libre', descripcion: 'El tutor no interviene', color: '#636E72', bg: 'linear-gradient(135deg, #636E72, #2D3436)' }
-        ];
-        return modos.map(modo => {
-            const esActivo = modo.id === modoActual;
-            return `
-                <div onclick="window.UIConfig._cambiarModoTutor('${modo.id}')" 
-                     style="background: ${esActivo ? modo.bg : 'var(--white)'};border-radius:12px;padding:14px 16px;border:3px solid ${esActivo ? modo.color : 'var(--light)'};cursor:pointer;transition:all 0.3s ease;text-align:center;box-shadow:${esActivo ? '0 4px 20px ' + modo.color + '40' : 'var(--shadow)'};transform:${esActivo ? 'scale(1.02)' : 'scale(1)'};"
-                     onmouseover="this.style.transform='scale(1.03)';this.style.boxShadow='0 4px 20px rgba(0,0,0,0.1)'" 
-                     onmouseout="this.style.transform='${esActivo ? 'scale(1.02)' : 'scale(1)'}';this.style.boxShadow='${esActivo ? '0 4px 20px ' + modo.color + '40' : 'var(--shadow)'}'">
-                    <div style="font-size:32px;display:block;margin-bottom:4px;">${modo.icono}</div>
-                    <div style="font-size:14px;font-weight:700;color:${esActivo ? 'white' : 'var(--dark)'};">${modo.nombre}${esActivo ? ' ✅' : ''}</div>
-                    <div style="font-size:11px;color:${esActivo ? 'rgba(255,255,255,0.8)' : 'var(--gray)'};margin-top:2px;">${modo.descripcion}</div>
-                    ${esActivo ? `<div style="font-size:9px;color:rgba(255,255,255,0.6);margin-top:4px;">🔒 Activo</div>` : ''}
-                </div>
-            `;
-        }).join('');
-    }
-
-    _getModoDescripcion() {
-        if (!window.tutorNeuro) return 'Tutor Neuro no disponible';
-        const info = window.tutorNeuro.getModoInfo();
-        return `${info.icono} ${info.nombre}: ${info.descripcion}`;
-    }
-
-    async _cambiarModoTutor(modo) {
-        if (!window.tutorNeuro) {
-            this.core?.mostrarToast('❌ Tutor Neuro no disponible', 'error');
-            return;
-        }
-        const modoActual = window.tutorNeuro.getModo();
-        if (modo === modoActual) {
-            this.core?.mostrarToast(`📌 Ya estás en ${window.tutorNeuro.getModoInfo().nombre}`, 'info');
-            return;
-        }
-        const nuevoInfo = window.tutorNeuro.setModo(modo);
-        this.core?.mostrarToast(`🔄 Modo cambiado a ${nuevoInfo.nombre}`, 'success');
-        await this._cargarConfiguracion();
-    }
-
-    // ============================================================
-    // RENDER TARJETAS DE IDIOMAS - CON PERSISTENCIA
-    // ============================================================
-
-    _renderTarjetasIdiomas(idiomas, activo) {
-        if (!idiomas || idiomas.length === 0) {
-            return `<div class="empty-state" style="text-align:center;padding:20px;color:var(--gray);grid-column:1/-1;">No hay idiomas configurados. Añade el primero.</div>`;
-        }
-        
-        // 🔥 OBTENER IDIOMA ACTIVO PERSISTENTE
-        const idiomaPersistente = localStorage.getItem(this._KEY_IDIOMA_ACTIVO) || activo || 'es';
-        
-        return idiomas.map(idioma => {
-            // 🔥 USAR IDIOMA PERSISTENTE PARA EL ESTADO ACTIVO
-            const esActivo = idioma.idioma === idiomaPersistente || idioma.idioma === activo;
-            const emoji = idioma.esJeroglifico ? '🀄' : '🌍';
-            const colorNivel = this._NIVEL_COLORES?.[idioma.nivel] || 'var(--primary)';
-            const versionEstandar = idioma.versionEstandar || 'v2.0';
-            const versionesDisponibles = this._obtenerVersionesDisponibles(idioma.idioma);
-            const nombreVersion = this._obtenerNombreVersion(idioma.idioma, versionEstandar);
-            const descripcionVersion = this._obtenerDescripcionVersion(idioma.idioma, versionEstandar);
-            const idiomaBase = window.gestorIdiomas?._obtenerIdiomaBase?.(idioma.idioma) || 'default';
-            const cacheVersion = window.gestorIdiomas?._cacheVersiones?.[idiomaBase];
-            const hayActualizacion = cacheVersion && cacheVersion.version && cacheVersion.version !== versionEstandar;
-            const progresoNeuro = Math.round((idioma.coberturaNivel || 0) * 0.6 + (idioma.progreso || 0) * 0.4);
-            let estadoNeuro = '🔴 En inicio';
-            let estadoColor = 'var(--danger)';
-            if (progresoNeuro >= 80) {
-                estadoNeuro = '🟣 Dominio avanzado';
-                estadoColor = 'var(--primary)';
-            } else if (progresoNeuro >= 60) {
-                estadoNeuro = '🟢 Consolidado';
-                estadoColor = 'var(--success)';
-            } else if (progresoNeuro >= 40) {
-                estadoNeuro = '🟡 En progreso';
-                estadoColor = 'var(--warning)';
-            } else if (progresoNeuro >= 20) {
-                estadoNeuro = '🟠 Iniciando';
-                estadoColor = 'var(--info)';
-            }
-            return `
-                <div class="language-card ${esActivo ? 'active' : ''}" data-idioma="${idioma.idioma}" style="background:${esActivo ? 'var(--primary)04' : 'var(--white)'};border-radius:10px;padding:12px 14px;border:2px solid ${esActivo ? 'var(--primary)' : 'var(--light)'};${hayActualizacion ? 'border-color:var(--warning);' : ''}">
-                    <div class="language-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
-                        <span class="language-icon" style="font-size:18px;">${emoji}</span>
-                        <span class="language-name" style="font-size:14px;font-weight:700;color:var(--dark);flex:1;margin-left:6px;">${idioma.idioma}</span>
-                        <span class="language-badge ${esActivo ? 'active-badge' : 'inactive-badge'}" style="font-size:10px;padding:2px 10px;border-radius:12px;background:${esActivo ? 'var(--success)' : 'var(--gray-light)'};color:white;">
-                            ${esActivo ? '✅ Activo' : '⏸️ Inactivo'}
-                        </span>
-                        ${hayActualizacion ? `
-                            <span class="language-badge" style="font-size:9px;padding:1px 8px;border-radius:8px;background:var(--warning);color:white;">
-                                🔔 Actualización
-                            </span>
-                        ` : ''}
-                    </div>
-                    <div class="language-card-body" style="display:flex;flex-direction:column;gap:6px;">
-                        <div class="language-level" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <span class="level-label" style="font-size:11px;color:var(--gray);">Nivel</span>
-                            <span class="level-value" style="font-size:14px;font-weight:700;color:${colorNivel};">${idioma.nivel}</span>
-                            <span class="level-status" style="font-size:11px;color:${estadoColor};">${estadoNeuro}</span>
-                        </div>
-                        <div class="config-item" style="background:var(--bg);padding:6px 10px;border-radius:6px;border:1px solid var(--light);">
-                            <label style="font-size:10px;color:var(--gray);display:flex;align-items:center;gap:4px;">
-                                <i class="fas fa-code-branch"></i> Versión del estándar
-                                ${hayActualizacion ? `<span style="font-size:8px;color:var(--warning);font-weight:600;">🔔 ${cacheVersion.nombre} disponible</span>` : ''}
-                            </label>
-                            <select id="versionSelect_${idioma.idioma}" 
-                                    data-idioma="${idioma.idioma}" 
-                                    style="width:100%;padding:3px 6px;border:1px solid var(--light);border-radius:4px;font-size:11px;background:var(--white);"
-                                    onchange="window.UIConfig._cambiarVersionIdioma('${idioma.idioma}', this.value)">
-                                ${versionesDisponibles.map(v => `
-                                    <option value="${v.id}" ${versionEstandar === v.id ? 'selected' : ''}>
-                                        ${v.nombre}
-                                    </option>
-                                `).join('')}
-                            </select>
-                            <div style="font-size:8px;color:var(--gray-light);margin-top:2px;display:flex;justify-content:space-between;flex-wrap:wrap;">
-                                <span>📊 Palabras requeridas: ${idioma.nivelRequerido || 'N/A'}</span>
-                                <span style="color:var(--secondary);">📌 ${descripcionVersion || nombreVersion}</span>
-                            </div>
-                        </div>
-                        <div class="progress-group">
-                            <div class="progress-item">
-                                <span class="progress-label" style="font-size:10px;color:var(--gray);">🧠 Progreso Neuro</span>
-                                <div class="progress-bar" style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden;">
-                                    <div class="progress-fill neuro-fill" style="height:100%;width:${progresoNeuro}%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:3px;"></div>
-                                </div>
-                                <span style="font-size:10px;font-weight:600;color:var(--primary);">${progresoNeuro}%</span>
-                            </div>
-                        </div>
-                        <div class="neuro-details" style="display:flex;gap:12px;font-size:10px;color:var(--gray);flex-wrap:wrap;">
-                            <span>📊 Frases: <strong>${idioma.progreso || 0}%</strong></span>
-                            <span>📖 Vocabulario: <strong>${idioma.coberturaNivel || 0}%</strong></span>
-                            <span>🧠 Consolidación: <strong>${progresoNeuro}%</strong></span>
-                        </div>
-                    </div>
-                    <div class="language-card-actions" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">
-                        ${!esActivo ? `
-                            <button class="btn-sm btn-primary" onclick="window.UIConfig._cambiarIdiomaActivo('${idioma.idioma}')" style="padding:3px 10px;font-size:10px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;">
-                                <i class="fas fa-check"></i> Activar
-                            </button>
-                        ` : ''}
-                        <button class="btn-sm btn-secondary" onclick="window.UIConfig._cambiarNivelIdioma('${idioma.idioma}')" style="padding:3px 10px;font-size:10px;background:var(--bg);border:1px solid var(--light);border-radius:4px;cursor:pointer;">
-                            <i class="fas fa-edit"></i> Nivel
-                        </button>
-                        ${idiomas.length > 1 ? `
-                            <button class="btn-sm btn-danger" onclick="window.UIConfig._eliminarIdioma('${idioma.idioma}')" style="padding:3px 10px;font-size:10px;background:#FF7675;color:white;border:none;border-radius:4px;cursor:pointer;">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // ============================================================
-    // RENDER PROGRESO NIVELES
-    // ============================================================
-
-    _renderProgresoNiveles(progresoNiveles) {
-        if (!progresoNiveles || Object.keys(progresoNiveles).length === 0) {
-            const idiomaActivo = gestorIdiomas?.getIdiomaActivo() || 'es';
-            const infoIdioma = gestorIdiomas?.getInfoIdioma(idiomaActivo);
-            return `
-                <div style="text-align:center;padding:20px;color:var(--gray);background:var(--bg);border-radius:8px;border:1px solid var(--light);grid-column:1/-1;">
-                    <i class="fas fa-info-circle" style="font-size:24px;color:var(--primary-light);display:block;margin-bottom:8px;"></i>
-                    <p style="font-size:13px;font-weight:500;margin:0;">📊 Progreso por Nivel</p>
-                    <p style="font-size:12px;color:var(--gray-light);margin:4px 0 0;">
-                        ${infoIdioma ? `No hay temas predefinidos guardados para <strong>${infoIdioma.idioma}</strong>.` : 'Activa un idioma para ver tu progreso aquí.'}
-                        <br>Genera o importa temas desde el módulo <strong>Temas</strong>.
-                    </p>
-                    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-                        <button class="btn-secondary" onclick="window.UIJSON.abrirGeneradorJSON()" style="padding:4px 14px;font-size:11px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">
-                            <i class="fas fa-plus"></i> Generar Temas
-                        </button>
-                        <button class="btn-secondary" onclick="window.UITemas._renderTemas()" style="padding:4px 14px;font-size:11px;background:var(--bg);border:1px solid var(--light);border-radius:6px;cursor:pointer;">
-                            <i class="fas fa-folder-open"></i> Ver Temas
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        const niveles = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-        const nivelActual = this._obtenerNivelRealUsuario();
-        const versionActiva = this._obtenerVersionActiva(gestorIdiomas?.getIdiomaActivo() || 'es');
-        const nombreVersion = this._obtenerNombreVersion(gestorIdiomas?.getIdiomaActivo() || 'es', versionActiva);
-        const nivelesConDatos = niveles.filter(n => progresoNiveles[n] && progresoNiveles[n].total > 0);
-        if (nivelesConDatos.length === 0) {
-            const idiomaActivo = gestorIdiomas?.getIdiomaActivo() || 'es';
-            const infoIdioma = gestorIdiomas?.getInfoIdioma(idiomaActivo);
-            return `
-                <div style="text-align:center;padding:20px;color:var(--gray);background:var(--bg);border-radius:8px;border:1px solid var(--light);grid-column:1/-1;">
-                    <i class="fas fa-info-circle" style="font-size:24px;color:var(--primary-light);display:block;margin-bottom:8px;"></i>
-                    <p style="font-size:13px;font-weight:500;margin:0;">📊 Progreso por Nivel</p>
-                    <p style="font-size:12px;color:var(--gray-light);margin:4px 0 0;">
-                        ${infoIdioma ? `No hay temas predefinidos guardados para <strong>${infoIdioma.idioma}</strong>.` : 'Activa un idioma para ver tu progreso aquí.'}
-                        <br>Genera o importa temas desde el módulo <strong>Temas</strong>.
-                    </p>
-                    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-                        <button class="btn-secondary" onclick="window.UIJSON.abrirGeneradorJSON()" style="padding:4px 14px;font-size:11px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;">
-                            <i class="fas fa-plus"></i> Generar Temas
-                        </button>
-                        <button class="btn-secondary" onclick="window.UITemas._renderTemas()" style="padding:4px 14px;font-size:11px;background:var(--bg);border:1px solid var(--light);border-radius:6px;cursor:pointer;">
-                            <i class="fas fa-folder-open"></i> Ver Temas
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-        return nivelesConDatos.map(nivel => {
-            const data = progresoNiveles[nivel];
-            if (!data || data.total === 0) return '';
-            const emoji = this._NIVEL_ICONOS?.[nivel] || '📚';
-            const color = this._NIVEL_COLORES?.[nivel] || 'var(--primary)';
-            const pct = data.porcentaje || 0;
-            const completados = data.completados || 0;
-            const total = data.total || 1;
-            const esActual = nivel === nivelActual;
-            return `
-                <div class="level-progress-card" style="background:${esActual ? 'var(--primary)04' : 'var(--bg)'};border-radius:8px;padding:10px 12px;border:2px solid ${esActual ? 'var(--primary)' : 'var(--light)'};">
-                    <div class="level-progress-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px;">
-                        <span class="level-emoji" style="font-size:18px;">${emoji}</span>
-                        <span class="level-name" style="font-size:13px;font-weight:700;color:var(--dark);">Nivel ${nivel}</span>
-                        ${esActual ? '<span class="level-badge current" style="font-size:9px;background:var(--primary);color:white;padding:1px 8px;border-radius:8px;">🎯 ACTUAL</span>' : ''}
-                        <span class="level-stats" style="font-size:11px;color:var(--gray);">${completados}/${total} temas</span>
-                    </div>
-                    <div class="progress-bar level-bar" style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden;">
-                        <div class="progress-fill" style="height:100%;width:${pct}%;background:${pct >= 80 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : color};border-radius:3px;"></div>
-                    </div>
-                    <div style="display:flex;justify-content:space-between;margin-top:2px;font-size:10px;color:var(--gray);">
-                        <span>${pct}%</span>
-                        ${pct >= 80 ? `<span class="level-badge complete" style="color:var(--success);font-weight:600;">🎉 ¡Completado!</span>` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    // ============================================================
-    // RENDER TARJETAS ESTADÍSTICAS
-    // ============================================================
-
-    _renderTarjetasEstadisticas(stats, progreso, temas, historias) {
-        const rcnPromedio = stats?.rcnPromedio || 0;
-        const eficiencia = stats?.eficiencia || 0;
-        const neuroScore = stats?.neuroScore || 0;
-        const totalFrases = stats?.totalFrases || 0;
-        const totalPalabras = stats?.totalPalabras || 0;
-        const completadas = progreso.filter(p => p.estado === 'completada').length;
-        const fechas = progreso.map(p => new Date(p.ultimoRepaso).toDateString());
-        const uniqueFechas = [...new Set(fechas)].sort();
-        let racha = 0;
-        for (let i = uniqueFechas.length - 1; i >= 0; i--) {
-            const fecha = new Date(uniqueFechas[i]);
-            const diff = Math.floor((Date.now() - fecha.getTime()) / 86400000);
-            if (diff === racha) { racha++; } else { break; }
-        }
-        return `
-            <div class="stat-card neuro-score" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">🧠</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--primary);display:block;">${neuroScore}%</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">NeuroScore</span>
-                </div>
-            </div>
-            <div class="stat-card rcn" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">📈</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--secondary);display:block;">${rcnPromedio.toFixed(1)}</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">RCN Promedio</span>
-                </div>
-            </div>
-            <div class="stat-card efficiency" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">⚡</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--warning);display:block;">${eficiencia}%</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">Eficiencia</span>
-                </div>
-            </div>
-            <div class="stat-card streak" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">🔥</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--danger);display:block;">${racha}</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">Racha (días)</span>
-                </div>
-            </div>
-            <div class="stat-card phrases" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">📖</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--success);display:block;">${completadas}/${totalFrases}</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">Frases Completadas</span>
-                </div>
-            </div>
-            <div class="stat-card words" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">📝</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--info);display:block;">${totalPalabras}</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">Palabras Aprendidas</span>
-                </div>
-            </div>
-            <div class="stat-card stories" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">📚</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--primary);display:block;">${historias.length}</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">Historias</span>
-                </div>
-            </div>
-            <div class="stat-card topics" style="background:var(--bg);border-radius:8px;padding:10px 12px;text-align:center;border:1px solid var(--light);">
-                <div class="stat-icon" style="font-size:24px;">📂</div>
-                <div class="stat-content">
-                    <span class="stat-value" style="font-size:18px;font-weight:700;color:var(--secondary);display:block;">${temas.length}</span>
-                    <span class="stat-label" style="font-size:10px;color:var(--gray);">Temas</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // ============================================================
-    // MÉTODOS DE CONFIGURACIÓN
-    // ============================================================
-
-    _inicializarEventosConfiguracion() {
-        document.getElementById('configIdiomaNativo')?.addEventListener('change', () => {});
-        const perfilBtn = document.querySelector('button[onclick*="_guardarConfigPerfil"]');
-        if (perfilBtn) {
-            const newBtn = perfilBtn.cloneNode(true);
-            perfilBtn.parentNode.replaceChild(newBtn, perfilBtn);
-            newBtn.onclick = () => this._guardarConfigPerfil();
-        }
-    }
-
-    // ============================================================
-    // AÑADIR IDIOMA NATIVO
-    // ============================================================
-
-    async _añadirIdiomaNativo() {
-        const nombre = await this.core?.prompt(
-            '📝 Nuevo idioma nativo:',
-            '',
-            'Ej: Inglés, Francés, Alemán...',
-            'Añadir Idioma Nativo'
-        );
-        if (!nombre) return;
-
-        const validacion = await window.validadorIdiomas.validar(nombre, 'nativo');
-        
-        if (!validacion.valido) {
-            this.core?.mostrarToast(`❌ "${nombre}" no es un idioma válido.`, 'error');
-            return;
+        _guardarHistoriasLeidas() {
+            try {
+                localStorage.setItem('pipeline_historias_leidas', JSON.stringify(Array.from(this._historiasLeidas)));
+            } catch (e) {}
         }
 
-        let nombreFinal = validacion.idiomaFinal;
-        
-        if (validacion.corregido) {
-            const aceptar = await this.core?.confirm(
-                `🔍 Sugerencia: "${nombre}" → **"${nombreFinal}"**\n\n${validacion.mensaje || ''}\n\n¿Usar "${nombreFinal}"?`,
-                '✏️ Corrección de idioma'
-            );
-            if (!aceptar) return;
-        }
-
-        const nativos = await gestorIdiomas.obtenerIdiomasNativos();
-        if (nativos.some(n => n.nombre === nombreFinal)) {
-            this.core?.mostrarToast(`⚠️ "${nombreFinal}" ya existe.`, 'warning');
-            return;
-        }
-        nativos.push({ id: 'nativo_' + Date.now(), nombre: nombreFinal, esActivo: false });
-        await gestorIdiomas.guardarIdiomasNativos(nativos);
-        
-        await window.validadorIdiomas.guardar(nombreFinal, 'nativo');
-        
-        this.core?.mostrarToast(`✅ "${nombreFinal}" añadido.`, 'success');
-        this._cargarConfiguracion();
-    }
-
-    // ============================================================
-    // AÑADIR IDIOMA
-    // ============================================================
-
-    async _abrirModalAgregarIdioma() {
-        if (this._modalIdiomaAbierto) return;
-        this._modalIdiomaAbierto = true;
-        
-        try {
-            const idioma = await this.core.prompt(
-                '📝 ¿Qué idioma quieres añadir?\n\nEjemplos: Chino, English, 日本語, Français...',
-                '',
-                'Escribe el nombre del idioma...',
-                '🌍 Nuevo Idioma'
-            );
-            if (!idioma) { this._modalIdiomaAbierto = false; return; }
-            
-            const idiomaTrim = idioma.trim();
-            if (!idiomaTrim) { this._modalIdiomaAbierto = false; return; }
-
-            let validacion = null;
-            
-            if (window.validadorIdiomas && window.vigia && window.vigia.enLinea && window.vigia._apiKeyValidada) {
-                try {
-                    validacion = await window.validadorIdiomas.validar(idiomaTrim, 'objetivo');
-                    console.log('🔍 Validación con Groq para objetivo:', validacion);
-                } catch (e) {
-                    console.warn('⚠️ Error en validadorIdiomas, usando fallback local:', e);
-                }
-            }
-
-            if (!validacion) {
-                if (window.app && typeof window.app._validarIdiomaLocal === 'function') {
-                    validacion = window.app._validarIdiomaLocal(idiomaTrim, 'objetivo');
-                    console.log('📌 Usando validación LOCAL para objetivo:', validacion);
-                } else {
-                    validacion = {
-                        original: idiomaTrim,
-                        idiomaFinal: idiomaTrim,
-                        valido: true,
-                        mensaje: 'Idioma aceptado',
-                        corregido: false
-                    };
-                }
-            }
-
-            if (!validacion.valido) {
-                let mensaje = `❌ "${idiomaTrim}" no es un idioma válido.`;
-                if (validacion.mensaje) {
-                    mensaje += `\n\n${validacion.mensaje}`;
-                }
-                if (window.app && typeof window.app._obtenerSugerenciasIdiomas === 'function') {
-                    const sugerencias = window.app._obtenerSugerenciasIdiomas(idiomaTrim);
-                    if (sugerencias.length > 0) {
-                        mensaje += `\n\n💡 ¿Quisiste decir: ${sugerencias.join(', ')}?`;
-                    }
-                }
-                await this.core.alert(mensaje, '❌ Idioma inválido');
-                this._modalIdiomaAbierto = false;
-                return;
-            }
-
-            let idiomaFinal = validacion.idiomaFinal;
-
-            if (validacion.corregido && validacion.sugerido) {
-                const aceptar = await this.core.confirm(
-                    `🔍 Sugerencia: "${idiomaTrim}" → **"${idiomaFinal}"**\n\n${validacion.mensaje || ''}\n\n¿Usar "${idiomaFinal}"?`,
-                    '✏️ Corrección de idioma'
+        async _toggleHistoriaLeida(historiaId, checked) {
+            if (!historiaId) return;
+            try {
+                if (checked) this._historiasLeidas.add(historiaId);
+                else this._historiasLeidas.delete(historiaId);
+                this._guardarHistoriasLeidas();
+                this._actualizarContadorHistoriasLeidas();
+                this.core?.mostrarToast(
+                    checked ? '✅ Historia marcada como leída' : '↩️ Historia desmarcada como leída',
+                    checked ? 'success' : 'info'
                 );
-                if (!aceptar) {
-                    this._modalIdiomaAbierto = false;
+            } catch (e) {
+                console.warn('⚠️ Error toggling historia leída:', e);
+            }
+        }
+
+        _actualizarTarjetaHistoria(historiaId, checked) {
+            try {
+                const tarjeta = document.querySelector(`.historia-card[data-historia-id="${historiaId}"]`);
+                if (!tarjeta) return;
+                const badge = tarjeta.querySelector('.historia-leida-badge');
+                const checkbox = tarjeta.querySelector('.historia-checkbox-input');
+                if (checkbox) checkbox.checked = checked;
+                if (badge) {
+                    badge.innerHTML = checked ? '✅ Leída' : '📖 No leída';
+                    badge.style.background = checked ? 'var(--success)' : 'var(--gray-light)';
+                    badge.style.color = checked ? 'white' : 'var(--gray)';
+                }
+                if (checked) {
+                    tarjeta.style.borderLeft = '4px solid var(--success)';
+                    tarjeta.style.background = 'rgba(0, 184, 148, 0.05)';
+                } else {
+                    tarjeta.style.borderLeft = '4px solid var(--light)';
+                    tarjeta.style.background = 'var(--white)';
+                }
+                const leidaTag = tarjeta.querySelector('.historia-leida-tag');
+                if (leidaTag) leidaTag.style.display = checked ? 'inline-block' : 'none';
+            } catch (e) {}
+        }
+
+        _actualizarContadorHistoriasLeidas() {
+            try {
+                const container = document.getElementById('cardContainer');
+                if (!container) return;
+                const contador = container.querySelector('.historias-leidas-contador');
+                if (contador) contador.textContent = `${this._historiasLeidas.size} leídas`;
+                const todasLasHistorias = container.querySelectorAll('.historia-card');
+                const total = todasLasHistorias.length;
+                const leidas = this._historiasLeidas.size;
+                const pct = total > 0 ? Math.round((leidas / total) * 100) : 0;
+                const barra = container.querySelector('.historias-leidas-progreso');
+                if (barra) barra.style.width = pct + '%';
+                const pctText = container.querySelector('.historias-leidas-porcentaje');
+                if (pctText) pctText.textContent = `${pct}%`;
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // CARGA PRINCIPAL - SIN BOTÓN LIBRO DE LECTURA
+        // ============================================================
+
+        cargar(core) {
+            this.core = core;
+            this._temaFinalizado = false;
+            this._verificandoProgreso = false;
+            this._progresoMostrado = 0;
+            this._estudiandoTemaDesdeLibro = false;
+            this._eventosEnlazados = false;
+            this._enlaceIntentos = 0;
+            this._origenHistoriaActual = null;
+            this._progresoRecargado = false;
+            this._ultimaActualizacionProgreso = 0;
+            
+            if (pipeline._estudiandoHistoria && pipeline._historiaIdActual) {
+                console.log(`📖 Cargando historia específica: ${pipeline._historiaIdActual}`);
+                this._origenHistoriaActual = pipeline.getOrigenHistoriaActual ? pipeline.getOrigenHistoriaActual() : null;
+                console.log(`   📌 Origen de la historia: ${this._origenHistoriaActual || 'desconocido'}`);
+            }
+            
+            if (pipeline._estudiandoTema && pipeline._temaActual) {
+                try {
+                    const frases = pipeline.frases || [];
+                    if (frases.length > 0) {
+                        const completadas = frases.filter(f => {
+                            const prog = f.progreso || {};
+                            return prog.estado === 'completada' || (prog.rcn || 0) >= 4;
+                        }).length;
+                        const progreso = Math.round((completadas / frases.length) * 100);
+                        this._progresoMostrado = progreso;
+                        
+                        if (progreso >= 100) {
+                            if (this._origenHistoriaActual === 'elipse') {
+                                this.core?.mostrarToast('🌊 Onda completada. Volviendo al Modo Elipse...', 'info');
+                                setTimeout(() => {
+                                    if (window._volverAlModoElipse) {
+                                        window._volverAlModoElipse('🌊 Onda ya completada. Volviendo al Modo Elipse');
+                                    }
+                                }, 1500);
+                                return;
+                            } else if (this._origenHistoriaActual === 'cruzada') {
+                                this.core?.mostrarToast('🌊 Onda Cruzada completada. Volviendo al Modo Ondas Cruzadas...', 'info');
+                                setTimeout(() => {
+                                    if (window._volverAlModoOndasCruzadas) {
+                                        window._volverAlModoOndasCruzadas('🌊 Onda Cruzada completada. Volviendo al Modo Ondas Cruzadas');
+                                    }
+                                }, 1500);
+                                return;
+                            } else if (this._origenHistoriaActual === 'tonos') {
+                                this.core?.mostrarToast('🎵 Historia tonal completada. Volviendo al Estudio de Tonos...', 'info');
+                                setTimeout(() => {
+                                    if (window._volverAlModoTonos) {
+                                        window._volverAlModoTonos('🎵 Historia tonal completada. Volviendo al Estudio de Tonos');
+                                    }
+                                }, 1500);
+                                return;
+                            } else {
+                                this.core?.mostrarToast('📖 Esta historia ya está completada. Volviendo a Temas...', 'info');
+                                setTimeout(() => {
+                                    this._salirDeHistoria();
+                                }, 1500);
+                                return;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Error verificando tema al cargar:', e);
+                }
+            }
+            
+            try {
+                if (pipeline && pipeline.frases && pipeline.frases.length > 0) {
+                    if (pipeline.fraseActual) {
+                        if (this._modoVista === 'libro' && !this._cerrandoLibro) {
+                            this._modoVista = 'frase';
+                            this._renderizarFraseInteractiva();
+                        } else if (this._modoVista === 'historia_completa') {
+                            this._renderizarHistoriaCompletaDesdeLibro();
+                        } else {
+                            this._modoVista = 'frase';
+                            this._renderizarFraseInteractiva();
+                        }
+                    } else {
+                        pipeline.cargarFrase(0);
+                    }
+                } else {
+                    this.mostrarPantallaInicio();
+                }
+            } catch (e) {
+                console.error('❌ Error en cargar:', e);
+                this.mostrarPantallaInicio();
+            }
+        }
+
+        // ============================================================
+        // GUARDAR ÍNDICE DE ESTUDIO
+        // ============================================================
+
+        async _guardarIndiceEstudio() {
+            if (this._guardandoIndice) return;
+            this._guardandoIndice = true;
+            try {
+                if (pipeline && pipeline.indiceFrase !== undefined && pipeline.idiomaObjetivo) {
+                    await db.guardarUltimoIndiceEstudio(pipeline.idiomaObjetivo, pipeline.indiceFrase);
+                }
+            } catch (e) {}
+            finally { this._guardandoIndice = false; }
+        }
+
+        // ============================================================
+        // VERIFICAR PROGRESO DEL TEMA
+        // ============================================================
+
+        async _verificarProgresoTema() {
+            if (this._verificandoProgreso) return;
+            if (this._temaFinalizado) return;
+            
+            if (!pipeline._estudiandoTema && !pipeline._estudiandoHistoria) return;
+            if (!pipeline._temaActual && !pipeline._historiaIdActual) return;
+
+            this._verificandoProgreso = true;
+            try {
+                await this._recargarProgresoCompleto();
+                
+                const frases = pipeline.frases || [];
+                if (frases.length === 0) { this._verificandoProgreso = false; return; }
+                
+                const completadas = frases.filter(f => {
+                    const prog = f.progreso || {};
+                    return prog.estado === 'completada' || (prog.rcn || 0) >= 4;
+                }).length;
+                
+                const progreso = Math.round((completadas / frases.length) * 100);
+                this._progresoMostrado = progreso;
+                
+                console.log(`📊 Progreso de la historia: ${progreso}% (${completadas}/${frases.length})`);
+                console.log(`   📌 Origen de la historia: ${this._origenHistoriaActual || 'desconocido'}`);
+                
+                if (pipeline._historiaIdActual && progreso >= 100) {
+                    await this._actualizarHistoriaIndividual(pipeline._historiaIdActual);
+                }
+                
+                if (progreso >= 100) {
+                    console.log('🎯 Historia completada al 100%!');
+                    
+                    const origen = this._origenHistoriaActual || pipeline.getOrigenHistoriaActual ? pipeline.getOrigenHistoriaActual() : 'tema';
+                    console.log(`   🔥 Origen detectado: ${origen}`);
+                    
+                    let esTono = false;
+                    try {
+                        const historia = await db.get('historias', pipeline._historiaIdActual);
+                        if (historia && historia._esTono === true) {
+                            esTono = true;
+                            console.log(`🎵 La historia ${pipeline._historiaIdActual} es una Historia Tonal (directo de DB)`);
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error verificando si es tonal:', e);
+                    }
+                    
+                    let esCruzada = false;
+                    try {
+                        const historia = await db.get('historias', pipeline._historiaIdActual);
+                        if (historia && historia._esOndaCruzada === true) {
+                            esCruzada = true;
+                            console.log(`🌊 La historia ${pipeline._historiaIdActual} es una Onda Cruzada (directo de DB)`);
+                        }
+                    } catch (e) {
+                        console.warn('⚠️ Error verificando si es cruzada:', e);
+                    }
+                    
+                    const origenFinal = esTono ? 'tonos' : (esCruzada ? 'cruzada' : origen);
+                    console.log(`   📌 Origen final: ${origenFinal}`);
+                    
+                    if (origenFinal === 'elipse' && pipeline._historiaIdActual) {
+                        window.dispatchEvent(new CustomEvent('elipseOndaCompletada', {
+                            detail: {
+                                historiaId: pipeline._historiaIdActual,
+                                temaId: pipeline._temaActual,
+                                progreso: progreso,
+                                completadas: completadas,
+                                total: frases.length
+                            }
+                        }));
+                    }
+                    
+                    if (origenFinal === 'tema') {
+                        await this._actualizarTemaYDispararEvento();
+                    }
+                    
+                    await this._mostrarModalHistoriaCompletada(pipeline._historiaIdActual, origenFinal);
+                    
+                    this._temaFinalizado = true;
+                    
+                    if (origenFinal === 'elipse' && window._volverAlModoElipse) {
+                        setTimeout(() => {
+                            window._volverAlModoElipse('🌌 Historia completada. Volviendo al Modo Elipse');
+                        }, 2500);
+                        return;
+                    } else if (origenFinal === 'cruzada' && window._volverAlModoOndasCruzadas) {
+                        setTimeout(() => {
+                            window._volverAlModoOndasCruzadas('🌊 Onda Cruzada completada. Volviendo al Modo Ondas Cruzadas');
+                        }, 2500);
+                        return;
+                    } else if (origenFinal === 'tonos' && window._volverAlModoTonos) {
+                        setTimeout(() => {
+                            window._volverAlModoTonos('🎵 Historia completada. Volviendo al Estudio de Tonos');
+                        }, 2500);
+                        return;
+                    } else {
+                        setTimeout(() => {
+                            this._salirDeHistoria();
+                        }, 2500);
+                        return;
+                    }
+                }
+                
+                this._actualizarProgresoUI(progreso);
+                
+            } catch (error) {
+                console.warn('⚠️ Error verificando progreso:', error);
+            } finally {
+                this._verificandoProgreso = false;
+            }
+        }
+
+        // ============================================================
+        // RECARGAR PROGRESO COMPLETO
+        // ============================================================
+
+        async _recargarProgresoCompleto() {
+            try {
+                const ahora = Date.now();
+                if (ahora - this._ultimaActualizacionProgreso < 2000 && this._progresoRecargado) {
+                    console.log('⏳ Progreso recargado recientemente, saltando...');
                     return;
                 }
-            }
-
-            const existentes = gestorIdiomas.getIdiomas();
-            if (existentes.some(i => i.idioma.toLowerCase() === idiomaFinal.toLowerCase())) {
-                await this.core.alert(`❌ El idioma "${idiomaFinal}" ya existe.`, 'Error');
-                this._modalIdiomaAbierto = false;
-                return;
-            }
-
-            const niveles = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-            const nivelOptions = niveles.map(n => {
-                const labels = { 
-                    'A1': 'Principiante', 
-                    'A2': 'Elemental', 
-                    'B1': 'Intermedio', 
-                    'B2': 'Intermedio Alto', 
-                    'C1': 'Avanzado', 
-                    'C2': 'Maestría' 
-                };
-                return `• ${n} - ${labels[n]}`;
-            }).join('\n');
-            
-            const nivel = await this.core.prompt(
-                `📊 Nivel para "${idiomaFinal}"\n\nOpciones:\n${nivelOptions}`,
-                'B1',
-                'Escribe el nivel (A1, A2, B1, B2, C1, C2)...',
-                '📊 Seleccionar Nivel'
-            );
-            if (!nivel) { this._modalIdiomaAbierto = false; return; }
-            
-            const nivelUpper = nivel.toUpperCase().trim();
-            if (!niveles.includes(nivelUpper)) {
-                await this.core.alert(`❌ "${nivel}" no es un nivel válido.`, 'Error');
-                this._modalIdiomaAbierto = false;
-                return;
-            }
-
-            await this._añadirIdioma(idiomaFinal, nivelUpper);
-            
-            if (window.validadorIdiomas) {
-                try {
-                    await window.validadorIdiomas.guardar(idiomaFinal, 'objetivo');
-                } catch (e) {
-                    console.warn('⚠️ Error guardando en validador:', e);
+                
+                console.log('🔄 Recargando progreso completo desde DB...');
+                
+                await pipeline.cargarProgreso();
+                
+                const frases = pipeline.frases || [];
+                for (const f of frases) {
+                    if (f.id) {
+                        const progresoActualizado = await db.obtenerProgreso(f.id);
+                        if (progresoActualizado) {
+                            f.progreso = progresoActualizado;
+                        }
+                    }
                 }
+                
+                if (pipeline.fraseActual && pipeline.fraseActual.id) {
+                    const progresoActualizado = await db.obtenerProgreso(pipeline.fraseActual.id);
+                    if (progresoActualizado) {
+                        pipeline.fraseActual.progreso = progresoActualizado;
+                        pipeline.faseActual = progresoActualizado.fase || 1;
+                        pipeline.estadoNeuro.rcn = progresoActualizado.rcn || 0;
+                        console.log(`   📊 Frase actual: RCN=${pipeline.estadoNeuro.rcn.toFixed(1)}, Fase=${pipeline.faseActual}`);
+                    }
+                }
+                
+                if (pipeline._estudiandoTema && pipeline._temaActual) {
+                    const tema = await db.obtenerTema(pipeline._temaActual);
+                    if (tema) {
+                        const historias = await db.obtenerHistoriasPorTema(tema.id);
+                        let todasCompletadas = true;
+                        let totalFrases = 0;
+                        let completadasTotal = 0;
+                        
+                        for (const h of historias) {
+                            const frasesHistoria = await db.obtenerFrasesPorHistoria(h.id);
+                            let completadas = 0;
+                            for (const f of frasesHistoria) {
+                                totalFrases++;
+                                const prog = await db.obtenerProgreso(f.id);
+                                if (prog && (prog.estado === 'completada' || prog.rcn >= 4)) {
+                                    completadas++;
+                                    completadasTotal++;
+                                }
+                            }
+                            if (completadas < frasesHistoria.length && frasesHistoria.length > 0) {
+                                todasCompletadas = false;
+                            }
+                        }
+                        
+                        if (todasCompletadas && totalFrases > 0 && tema.estado !== 'completado') {
+                            console.log(`✅ Todas las historias del tema "${tema.nombre}" completadas. Marcando tema como completado.`);
+                            tema.estado = 'completado';
+                            tema._completado = true;
+                            tema._fechaCompletado = Date.now();
+                            await db.update('temas', tema);
+                            
+                            const idioma = tema.idioma || gestorIdiomas.getIdiomaActivo() || 'es';
+                            const temaOriginalId = tema._temaOriginalId || tema.id;
+                            window.dispatchEvent(new CustomEvent('temaCompletado', {
+                                detail: {
+                                    idioma: idioma,
+                                    temaId: temaOriginalId,
+                                    temaDbId: tema.id,
+                                    completado: true,
+                                    tema: tema,
+                                    origen: 'tema',
+                                    totalFrases: totalFrases,
+                                    completadas: completadasTotal
+                                }
+                            }));
+                        }
+                    }
+                }
+                
+                this._progresoRecargado = true;
+                this._ultimaActualizacionProgreso = Date.now();
+                console.log('✅ Progreso recargado correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error recargando progreso:', error);
             }
-            
-            this.core?.mostrarToast(`✅ Idioma "${idiomaFinal}" añadido (${nivelUpper})`, 'success');
-            
-        } catch (e) {
-            console.error('❌ Error:', e);
-            await this.core.alert('❌ Error: ' + e.message, 'Error');
-        } finally {
-            this._modalIdiomaAbierto = false;
         }
-    }
 
-    // ============================================================
-    // AÑADIR IDIOMA - CON PERSISTENCIA
-    // ============================================================
+        // ============================================================
+        // ACTUALIZAR HISTORIA INDIVIDUAL
+        // ============================================================
 
-    async _añadirIdioma(idioma, nivel) {
-        try {
-            const result = await gestorIdiomas.añadirIdioma(idioma, nivel);
-            if (result) {
-                await gestorIdiomas._cargarIdiomas();
-                await window.validadorIdiomas.guardar(idioma, 'objetivo');
+        async _actualizarHistoriaIndividual(historiaId) {
+            try {
+                console.log(`🔄 Actualizando estado de historia individual: ${historiaId}`);
                 
-                // 🔥 GUARDAR COMO IDIOMA ACTIVO
-                await this._guardarIdiomaActivoPersistente(idioma);
+                const historia = await db.get('historias', historiaId);
+                if (!historia) {
+                    console.warn(`⚠️ Historia ${historiaId} no encontrada`);
+                    return;
+                }
                 
-                await this._recargarConfiguracion();
+                const frases = await db.obtenerFrasesPorHistoria(historiaId);
+                let todasCompletadas = true;
+                for (const f of frases) {
+                    const progreso = await db.obtenerProgreso(f.id);
+                    if (!progreso || (progreso.estado !== 'completada' && (progreso.rcn || 0) < 4)) {
+                        todasCompletadas = false;
+                        break;
+                    }
+                }
+                
+                if (todasCompletadas && frases.length > 0) {
+                    historia.estado = 'completada';
+                    historia._completada = true;
+                    historia._fechaCompletado = Date.now();
+                    await db.update('historias', historia);
+                    
+                    console.log(`✅ Historia "${historia.titulo}" marcada como completada (${frases.length} frases)`);
+                    
+                    const idioma = historia.idioma || gestorIdiomas.getIdiomaActivo() || 'es';
+                    const temaId = historia.temaId;
+                    
+                    if (temaId) {
+                        const tema = await db.obtenerTema(temaId);
+                        const temaOriginalId = tema?._temaOriginalId || temaId;
+                        
+                        window.dispatchEvent(new CustomEvent('historiaCompletada', {
+                            detail: {
+                                historiaId: historiaId,
+                                historiaTitulo: historia.titulo,
+                                temaId: temaId,
+                                temaOriginalId: temaOriginalId,
+                                idioma: idioma,
+                                completado: true
+                            }
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Error actualizando historia individual:', error);
+            }
+        }
+
+        // ============================================================
+        // ACTUALIZAR TEMA Y DISPARAR EVENTO
+        // ============================================================
+
+        async _actualizarTemaYDispararEvento() {
+            try {
+                const temaId = pipeline._temaActual;
+                if (!temaId) {
+                    console.warn('⚠️ No hay tema actual para actualizar');
+                    return;
+                }
+                
+                const tema = await db.obtenerTema(temaId);
+                if (!tema) {
+                    console.warn(`⚠️ Tema ${temaId} no encontrado`);
+                    return;
+                }
+                
+                const historias = await db.obtenerHistoriasPorTema(temaId);
+                let todasCompletadas = true;
+                let totalFrases = 0;
+                let completadasTotal = 0;
+                
+                for (const h of historias) {
+                    const frases = await db.obtenerFrasesPorHistoria(h.id);
+                    let completadas = 0;
+                    for (const f of frases) {
+                        totalFrases++;
+                        const progreso = await db.obtenerProgreso(f.id);
+                        if (progreso && (progreso.estado === 'completada' || progreso.rcn >= 4)) {
+                            completadas++;
+                            completadasTotal++;
+                        }
+                    }
+                    if (completadas < frases.length && frases.length > 0) {
+                        todasCompletadas = false;
+                    }
+                }
+                
+                if (tema.estado === 'completado' || tema._completado === true) {
+                    console.log(`ℹ️ Tema "${tema.nombre}" ya está completado`);
+                    return;
+                }
+                
+                if (todasCompletadas && totalFrases > 0) {
+                    console.log(`✅ Todas las historias del tema "${tema.nombre}" completadas. Marcando tema como completado.`);
+                    
+                    tema.estado = 'completado';
+                    tema._completado = true;
+                    tema._fechaCompletado = Date.now();
+                    await db.update('temas', tema);
+                    
+                    const idioma = tema.idioma || gestorIdiomas.getIdiomaActivo() || 'es';
+                    const temaOriginalId = tema._temaOriginalId || tema.id;
+                    
+                    window.dispatchEvent(new CustomEvent('temaCompletado', {
+                        detail: {
+                            idioma: idioma,
+                            temaId: temaOriginalId,
+                            temaDbId: tema.id,
+                            completado: true,
+                            tema: tema,
+                            origen: 'tema',
+                            totalFrases: totalFrases,
+                            completadas: completadasTotal
+                        }
+                    }));
+                    
+                    if (this.core) {
+                        this.core.mostrarToast(`🎉 ¡Tema "${tema.nombre}" completado al 100%!`, 'success');
+                    }
+                } else {
+                    console.log(`📊 Tema "${tema.nombre}" no completado (${completadasTotal}/${totalFrases} frases)`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error actualizando tema:', error);
+            }
+        }
+
+        // ============================================================
+        // MOSTRAR MODAL DE HISTORIA COMPLETADA
+        // ============================================================
+
+        async _mostrarModalHistoriaCompletada(historiaId, origen) {
+            try {
+                const historia = await db.get('historias', historiaId);
+                if (!historia) return;
+                
+                const esElipse = origen === 'elipse';
+                const esCruzada = origen === 'cruzada';
+                const esTono = origen === 'tonos';
+                const esTema = origen === 'tema';
+                
+                const frases = await db.obtenerFrasesPorHistoria(historiaId);
+                const totalFrases = frases.length;
+                let completadas = 0;
+                for (const f of frases) {
+                    const prog = await db.obtenerProgreso(f.id);
+                    if (prog && (prog.estado === 'completada' || prog.rcn >= 4)) {
+                        completadas++;
+                    }
+                }
+                
+                let titulo = '';
+                let icono = '';
+                let mensaje = '';
+                let botonTexto = '';
+                let botonAccion = '';
+                let colorBoton = '';
+                
+                if (esElipse) {
+                    titulo = '🌊 ¡Onda Completada!';
+                    icono = '🌊';
+                    mensaje = `Has completado la onda "${historia.titulo}" en el Modo Elipse.`;
+                    botonTexto = '🌌 Volver al Modo Elipse';
+                    botonAccion = `window._volverAlModoElipse ? window._volverAlModoElipse('🔄 Volviendo al Modo Elipse') : window.uiCore.irAModulo('elipse')`;
+                    colorBoton = 'linear-gradient(135deg, #6C5CE7, #00CEC9)';
+                } else if (esCruzada) {
+                    titulo = '🌊 ¡Onda Cruzada Completada!';
+                    icono = '🌊';
+                    mensaje = `Has completado la onda cruzada "${historia.titulo}" en el Modo Ondas Cruzadas.`;
+                    botonTexto = '🌊 Volver al Modo Ondas Cruzadas';
+                    botonAccion = `window._volverAlModoOndasCruzadas ? window._volverAlModoOndasCruzadas('🔄 Volviendo al Modo Ondas Cruzadas') : window.uiCore.irAModulo('ondasCruzadas')`;
+                    colorBoton = 'linear-gradient(135deg, #6C5CE7, #00CEC9)';
+                } else if (esTono) {
+                    titulo = '🎵 ¡Historia Tonal Completada!';
+                    icono = '🎵';
+                    mensaje = `Has completado la historia tonal "${historia.titulo}" en el Estudio de Tonos.`;
+                    botonTexto = '🎵 Volver al Estudio de Tonos';
+                    botonAccion = `window._volverAlModoTonos ? window._volverAlModoTonos('🔄 Volviendo al Estudio de Tonos') : window.uiCore.irAModulo('tonos')`;
+                    colorBoton = 'linear-gradient(135deg, #FDCB6E, #E17055)';
+                } else {
+                    titulo = '📖 ¡Historia Completada!';
+                    icono = '📖';
+                    mensaje = `Has completado la historia "${historia.titulo}" del tema.`;
+                    botonTexto = '📂 Volver a Temas';
+                    botonAccion = `window.uiCore.irAModulo('temas')`;
+                    colorBoton = 'linear-gradient(135deg, #FDCB6E, #E17055)';
+                }
+                
+                const modalHTML = `
+                    <div id="modalHistoriaCompletada" style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(0,0,0,0.7);
+                        backdrop-filter: blur(10px);
+                        z-index: 100001;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        padding: 20px;
+                        animation: fadeIn 0.3s ease;
+                    ">
+                        <div style="
+                            background: var(--white, #ffffff);
+                            border-radius: 20px;
+                            padding: 30px 35px;
+                            max-width: 450px;
+                            width: 100%;
+                            text-align: center;
+                            box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+                            animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                        ">
+                            <div style="font-size: 64px; margin-bottom: 12px;">${icono}</div>
+                            <h2 style="font-size: 24px; font-weight: 800; color: var(--dark); margin-bottom: 8px;">${titulo}</h2>
+                            <p style="font-size: 16px; color: var(--gray); margin-bottom: 16px;">${mensaje}</p>
+                            
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; padding: 12px; background: var(--bg); border-radius: 12px;">
+                                <div>
+                                    <div style="font-size: 28px; font-weight: 800; color: var(--success);">${totalFrases}</div>
+                                    <div style="font-size: 10px; color: var(--gray); text-transform: uppercase;">Frases</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 28px; font-weight: 800; color: var(--success);">${completadas}</div>
+                                    <div style="font-size: 10px; color: var(--gray); text-transform: uppercase;">Completadas</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 28px; font-weight: 800; color: var(--success);">100%</div>
+                                    <div style="font-size: 10px; color: var(--gray); text-transform: uppercase;">Progreso</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: var(--success)08; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; border: 1px solid var(--success);">
+                                <p style="color: var(--success); font-weight: 600; margin: 0;">
+                                    ${esElipse ? '🌊 Esta onda se ha sincronizado con el tema.' : 
+                                      esCruzada ? '🌊 Esta onda cruzada se ha sincronizado con el tema.' : 
+                                      esTono ? '🎵 Esta historia tonal se ha guardado en Mi Espacio.' :
+                                      '✅ Historia completada correctamente.'}
+                                    ${esTema ? '🎉 El progreso del tema se ha actualizado.' : ''}
+                                </p>
+                            </div>
+                            
+                            <button onclick="this.closest('div[style]').remove(); ${botonAccion}" class="btn-primary" style="
+                                padding: 12px 30px;
+                                font-size: 16px;
+                                font-weight: 700;
+                                border: none;
+                                border-radius: 10px;
+                                cursor: pointer;
+                                background: ${colorBoton};
+                                color: white;
+                                transition: all 0.3s;
+                            " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 20px rgba(108,92,231,0.3)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                                ${botonTexto}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                const existing = document.getElementById('modalHistoriaCompletada');
+                if (existing) existing.remove();
+                
+                const container = document.getElementById('cardContainer');
+                if (container) {
+                    container.insertAdjacentHTML('beforeend', modalHTML);
+                } else {
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                }
+                
+                setTimeout(() => {
+                    if (esElipse && window.UIClipse) {
+                        window.UIClipse.cargar(window.uiCore);
+                    }
+                    if (esCruzada && window.UIOndasCruzadas) {
+                        window.UIOndasCruzadas.cargar(window.uiCore);
+                    }
+                    if (esTono && window.UITonos) {
+                        window.UITonos.cargar(window.uiCore);
+                    }
+                    if (window.UIDashboard) {
+                        window.UIDashboard._cargarDashboardInicial(window.uiCore);
+                    }
+                    if (window.UITemas) {
+                        window.UITemas._renderTemas();
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Error mostrando modal de historia completada:', error);
+            }
+        }
+
+        // ============================================================
+        // SALIR DE HISTORIA
+        // ============================================================
+
+        async _salirDeHistoria() {
+            console.log('🔙 Saliendo de la historia...');
+            
+            try {
+                const origen = this._origenHistoriaActual || pipeline.getOrigenHistoriaActual ? pipeline.getOrigenHistoriaActual() : 'tema';
+                console.log(`   📌 Origen al salir: ${origen}`);
+                
+                if (pipeline._temaOriginalFrases) {
+                    pipeline.frases = pipeline._temaOriginalFrases;
+                    pipeline.indiceFrase = pipeline._temaOriginalIndice || 0;
+                    pipeline._estudiandoHistoria = false;
+                    pipeline._historiaIdActual = null;
+                    pipeline._origenHistoria = null;
+                    pipeline._temaOriginalFrases = null;
+                    pipeline._temaOriginalIndice = 0;
+                    await pipeline.cargarFrase(pipeline.indiceFrase);
+                } else {
+                    const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+                    await pipeline.cargarFrasesPorIdioma(idioma);
+                    await pipeline.cargarProgreso();
+                    if (pipeline.frases.length > 0) {
+                        await pipeline.cargarFrase(0);
+                    }
+                }
+                
+                this._temaFinalizado = false;
+                this._temaCompletadoCallback = null;
+                this._origenHistoriaActual = null;
+                
+                if (origen === 'elipse') {
+                    if (this.core && window._volverAlModoElipse) {
+                        window._volverAlModoElipse('🔄 Volviendo al Modo Elipse');
+                    } else if (this.core) {
+                        this.core.irAModulo('elipse');
+                        this.core.mostrarToast('🔄 Volviendo al Modo Elipse', 'info');
+                    }
+                } else if (origen === 'cruzada') {
+                    if (this.core && window._volverAlModoOndasCruzadas) {
+                        window._volverAlModoOndasCruzadas('🔄 Volviendo al Modo Ondas Cruzadas');
+                    } else if (this.core) {
+                        this.core.irAModulo('ondasCruzadas');
+                        this.core.mostrarToast('🔄 Volviendo al Modo Ondas Cruzadas', 'info');
+                    }
+                } else if (origen === 'tonos') {
+                    if (this.core && window._volverAlModoTonos) {
+                        window._volverAlModoTonos('🔄 Volviendo al Estudio de Tonos');
+                    } else if (this.core) {
+                        this.core.irAModulo('tonos');
+                        this.core.mostrarToast('🔄 Volviendo al Estudio de Tonos', 'info');
+                    }
+                } else {
+                    if (this.core) {
+                        this.core.irAModulo('temas');
+                        this.core.mostrarToast('🔄 Has salido de la historia. Volviendo a Temas.', 'info');
+                        if (window.UITemas) {
+                            setTimeout(() => {
+                                window.UITemas._renderTemas();
+                            }, 300);
+                        }
+                    }
+                }
+                
+                this._renderizarFraseInteractiva();
+                
                 if (window.UIDashboard) {
                     window.UIDashboard._cargarDashboardInicial(this.core);
                 }
-                this.core?.mostrarToast(`✅ Idioma "${idioma}" añadido (${nivel})`, 'success');
-            } else {
-                this.core?.mostrarToast(`❌ El idioma "${idioma}" ya existe`, 'error');
-            }
-        } catch (error) {
-            console.error('❌ Error añadiendo idioma:', error);
-            this.core?.mostrarToast('❌ Error: ' + error.message, 'error');
-        }
-    }
-
-    // ============================================================
-    // OTROS MÉTODOS
-    // ============================================================
-
-    async _guardarConfigPerfil() {
-        const nombre = document.getElementById('configNombre')?.value?.trim() || '';
-        const idiomaNativoSelect = document.getElementById('configIdiomaNativo');
-        const nativoId = idiomaNativoSelect?.value || '';
-        if (!nombre) { this.core?.mostrarToast('❌ El nombre es obligatorio.', 'error'); return; }
-        if (nativoId) { await gestorIdiomas.cambiarIdiomaNativo(nativoId); }
-        const autoNivel = document.getElementById('configAutoNivel')?.checked ?? true;
-        const notificaciones = document.getElementById('configNotificaciones')?.checked ?? true;
-        const recordatorios = document.getElementById('configRecordatorios')?.checked ?? true;
-        const usuario = await db.getUsuario();
-        if (usuario) {
-            usuario.nombre = nombre;
-            usuario.nivelAuto = autoNivel;
-            usuario.notificaciones = notificaciones;
-            usuario.recordatorios = recordatorios;
-            await db.guardarUsuario(usuario);
-            localStorage.setItem('pipeline_usuario', JSON.stringify(usuario));
-            this.core?.mostrarToast('✅ Perfil guardado.', 'success');
-            const userName = document.getElementById('userName');
-            const dashUser = document.getElementById('dashUserName');
-            if (userName) userName.textContent = nombre;
-            if (dashUser) dashUser.textContent = nombre;
-            this._cargarConfiguracion();
-        }
-    }
-
-    // ============================================================
-    // CAMBIAR IDIOMA ACTIVO - CORREGIDO CON PERSISTENCIA
-    // ============================================================
-
-    async _cambiarIdiomaActivo(idioma) {
-        if (this._cambiandoIdioma) {
-            this.core?.mostrarToast('⏳ Cambiando idioma...', 'info');
-            return;
-        }
-        
-        this._cambiandoIdioma = true;
-        
-        try {
-            // 🔥 GUARDAR CON PERSISTENCIA
-            await this._guardarIdiomaActivoPersistente(idioma);
-            
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            await this._recargarConfiguracion();
-            
-            if (window.UIDashboard) {
-                window.UIDashboard._cargarDashboardInicial(this.core);
-            }
-            if (window.UIStudy) {
-                window.UIStudy._renderizarFraseInteractiva();
-            }
-            if (window.UIGrammar) {
-                window.UIGrammar._cargarGramatica();
-            }
-            if (window.UITemas) {
-                window.UITemas._renderTemas();
-            }
-            if (window.UIEspacio) {
-                window.UIEspacio._renderizarMiEspacio();
-            }
-            
-            this.core?.mostrarToast(`🌍 Idioma activo: ${idioma}`, 'success');
-            localStorage.setItem(this._KEY_IDIOMA_ACTIVO, idioma);
-            
-        } catch (error) {
-            console.error('❌ Error cambiando idioma:', error);
-            this.core?.mostrarToast('❌ Error al cambiar idioma: ' + error.message, 'error');
-        } finally {
-            this._cambiandoIdioma = false;
-        }
-    }
-
-    async _cambiarNivelIdioma(idioma) {
-        const info = gestorIdiomas.getInfoIdioma(idioma);
-        if (!info) { this.core?.mostrarToast('❌ Idioma no encontrado', 'error'); return; }
-        const niveles = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-        const nivelOptions = niveles.map(n => {
-            const labels = { 'A1': 'Principiante', 'A2': 'Elemental', 'B1': 'Intermedio', 'B2': 'Intermedio Alto', 'C1': 'Avanzado', 'C2': 'Maestría' };
-            const actual = n === info.nivel ? ' (actual)' : '';
-            return `• ${n} - ${labels[n]}${actual}`;
-        }).join('\n');
-        const nuevoNivel = await this.core.prompt(
-            `📊 Cambiar nivel para "${idioma}"\n\nNivel actual: ${info.nivel}\n\nOpciones:\n${nivelOptions}`,
-            info.nivel,
-            'Escribe el nuevo nivel...',
-            '📊 Cambiar Nivel'
-        );
-        if (!nuevoNivel) return;
-        const nivelUpper = nuevoNivel.toUpperCase().trim();
-        if (!niveles.includes(nivelUpper)) {
-            await this.core.alert(`❌ "${nuevoNivel}" no es un nivel válido.`, 'Error');
-            return;
-        }
-        if (nivelUpper === info.nivel) { this.core?.mostrarToast(`📌 Ya estás en nivel ${nivelUpper}`, 'info'); return; }
-        try {
-            const result = await gestorIdiomas.cambiarNivel(idioma, nivelUpper);
-            if (result) {
-                await this._recargarConfiguracion();
-                if (idioma === gestorIdiomas.getIdiomaActivo() && pipeline) { pipeline.nivel = nivelUpper; }
-                if (window.UIDashboard) { window.UIDashboard._cargarDashboardInicial(this.core); }
-                this.core?.mostrarToast(`✅ Nivel de "${idioma}" cambiado a ${nivelUpper}`, 'success');
-            }
-        } catch (e) { this.core?.mostrarToast('❌ Error: ' + e.message, 'error'); }
-    }
-
-    // ============================================================
-    // ELIMINAR IDIOMA - CON PERSISTENCIA
-    // ============================================================
-
-    async _eliminarIdioma(idioma) {
-        const info = gestorIdiomas.getInfoIdioma(idioma);
-        if (!info) { this.core?.mostrarToast('❌ Idioma no encontrado', 'error'); return; }
-        const idiomas = gestorIdiomas.getIdiomas();
-        if (idiomas.length <= 1) { await this.core.alert('❌ No puedes eliminar el último idioma.', 'Error'); return; }
-        const confirmar = await this.core.confirm(
-            `⚠️ ¿Eliminar el idioma "${idioma}"?\n\nNivel: ${info.nivel}\nProgreso: ${info.progreso || 0}%\nVersión: ${info.versionEstandar || 'v2.0'}`,
-            '🗑️ Eliminar Idioma'
-        );
-        if (!confirmar) return;
-        try {
-            const result = await gestorIdiomas.eliminarIdioma(idioma);
-            if (result) {
-                // 🔥 SI EL IDIOMA ELIMINADO ERA EL ACTIVO, CAMBIAR A OTRO
-                const idiomaPersistente = localStorage.getItem(this._KEY_IDIOMA_ACTIVO);
-                if (idiomaPersistente === idioma) {
-                    const idiomasRestantes = gestorIdiomas.getIdiomas();
-                    if (idiomasRestantes.length > 0) {
-                        await this._guardarIdiomaActivoPersistente(idiomasRestantes[0].idioma);
-                    } else {
-                        localStorage.removeItem(this._KEY_IDIOMA_ACTIVO);
-                    }
-                }
-                await this._recargarConfiguracion();
-                if (window.UIDashboard) { window.UIDashboard._cargarDashboardInicial(this.core); }
-                this.core?.mostrarToast(`🗑️ Idioma "${idioma}" eliminado`, 'warning');
-            }
-        } catch (e) { this.core?.mostrarToast('❌ Error: ' + e.message, 'error'); }
-    }
-
-    async _cargarHistorialNiveles() {
-        try {
-            const historial = await db.getAll('historialNiveles');
-            const container = document.getElementById('configHistorialNiveles');
-            if (!container) return;
-            if (historial.length === 0) {
-                container.innerHTML = '<p style="color:var(--gray);font-size:13px;">No hay cambios de nivel registrados.</p>';
-                return;
-            }
-            let html = '<div style="display:flex;flex-direction:column;gap:4px;">';
-            const ultimos = historial.slice(-10).reverse();
-            for (const h of ultimos) {
-                const fecha = new Date(h.fecha).toLocaleDateString();
-                const emoji = h.nivelNuevo > h.nivelAnterior ? '⬆️' : '⬇️';
-                const idioma = h.idioma || 'idioma desconocido';
-                html += `
-                    <div style="display:flex;justify-content:space-between;padding:4px 8px;background:var(--bg);border-radius:4px;font-size:12px;color:var(--gray);">
-                        <span>${emoji} ${h.nivelAnterior} → ${h.nivelNuevo} (${idioma})</span>
-                        <span style="color:var(--gray-light);">${fecha}</span>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            container.innerHTML = html;
-        } catch (e) { console.warn('⚠️ Error cargando historial:', e); }
-    }
-
-    async _actualizarNivelHeader() {
-        try {
-            const activo = gestorIdiomas.getIdiomaActivo();
-            const info = gestorIdiomas.getInfoIdioma(activo);
-            const nivel = info?.nivel || 'A1';
-            const nivelEl = document.getElementById('neuroNivel');
-            if (nivelEl) nivelEl.textContent = nivel;
-        } catch (e) { console.warn('⚠️ Error actualizando nivel header:', e); }
-    }
-
-    // ============================================================
-    // RENDERIZAR TARJETA DE IMPORTACIÓN DE TEMAS POR NIVELES
-    // ============================================================
-
-    _renderTarjetaImportacionTemasNivel(idiomaActivo, nivelReal, nombreIdioma, versionActiva, nombreVersion) {
-        let codigoIso = this._obtenerCodigoIso(idiomaActivo);
-        
-        return `
-            <div style="background:linear-gradient(135deg, #2D3436, #0984E3);border-radius:16px;padding:20px 24px;margin-bottom:16px;box-shadow:0 4px 30px rgba(9,132,227,0.25);border:1px solid rgba(255,255,255,0.1);">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
-                    <div style="display:flex;align-items:flex-start;gap:14px;">
-                        <div style="font-size:38px;animation:pulse 2s ease-in-out infinite;line-height:1;">📂</div>
-                        <div>
-                            <h3 style="font-size:17px;font-weight:800;color:white;margin:0;letter-spacing:-0.3px;">
-                                Importación de Temas por Niveles
-                                <span style="font-size:11px;font-weight:400;color:rgba(255,255,255,0.5);margin-left:8px;">${nombreVersion}</span>
-                            </h3>
-                            <p style="font-size:12px;color:rgba(255,255,255,0.7);margin:2px 0 0;">
-                                <span style="background:rgba(255,255,255,0.1);padding:1px 8px;border-radius:4px;font-family:monospace;font-size:11px;color:#74B9FF;">${codigoIso}_NIVEL.json</span>
-                                <span style="margin-left:8px;">🌍 ${nombreIdioma} · Nivel actual: <strong style="color:#74B9FF;">${nivelReal}</strong></span>
-                            </p>
-                            <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:2px;">
-                                📂 Formato: <strong style="color:#55EFC4;font-family:monospace;">data/CODIGO_NIVEL.json</strong> 
-                                (ej: <strong style="color:#55EFC4;font-family:monospace;">${codigoIso}_A1.json</strong>, <strong style="color:#55EFC4;font-family:monospace;">en_B1.json</strong>)
-                            </p>
-                        </div>
-                    </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;">
-                        <button class="btn-primary" onclick="window.UIConfig._cargarArchivosTemasNivel()" 
-                                style="padding:8px 18px;font-size:12px;font-weight:600;background:rgba(255,255,255,0.15);color:white;border:1px solid rgba(255,255,255,0.2);border-radius:8px;cursor:pointer;transition:all 0.3s;backdrop-filter:blur(4px);"
-                                onmouseover="this.style.background='rgba(255,255,255,0.25)';this.style.transform='scale(1.02)'" 
-                                onmouseout="this.style.background='rgba(255,255,255,0.15)';this.style.transform='none'">
-                            <i class="fas fa-sync"></i> Buscar Archivos
-                        </button>
-                        <button class="btn-primary" onclick="window.UIConfig._mostrarAyudaImportacion()" 
-                                style="padding:8px 18px;font-size:12px;font-weight:600;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.1);border-radius:8px;cursor:pointer;transition:all 0.3s;"
-                                onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.borderColor='rgba(255,255,255,0.3)'" 
-                                onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.1)'">
-                            <i class="fas fa-question-circle"></i> Ayuda
-                        </button>
-                    </div>
-                </div>
                 
-                <div id="archivosTemasContainer" style="margin-top:14px;background:rgba(255,255,255,0.06);border-radius:12px;padding:14px 16px;border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(4px);">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                        <span style="font-size:12px;color:rgba(255,255,255,0.6);">
-                            <i class="fas fa-folder-open"></i> Archivos disponibles:
-                            <span id="archivosCount" style="font-weight:700;color:#74B9FF;font-size:14px;">0</span>
-                        </span>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                            <button class="btn-secondary" onclick="window.UIConfig._seleccionarTodosArchivos()" 
-                                    style="padding:3px 12px;font-size:10px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.1);border-radius:4px;cursor:pointer;transition:all 0.2s;"
-                                    onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">
-                                Seleccionar Todos
-                            </button>
-                            <button class="btn-secondary" onclick="window.UIConfig._deseleccionarTodosArchivos()" 
-                                    style="padding:3px 12px;font-size:10px;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.05);border-radius:4px;cursor:pointer;transition:all 0.2s;"
-                                    onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">
-                                Deseleccionar
-                            </button>
-                            <button class="btn-primary" id="btnImportarTemasNivel" onclick="window.UIConfig._importarTemasSeleccionados()" 
-                                    style="padding:5px 16px;font-size:11px;font-weight:700;background:linear-gradient(135deg,#00B894,#00CEC9);color:white;border:none;border-radius:6px;cursor:pointer;transition:all 0.3s;box-shadow:0 2px 12px rgba(0,206,201,0.3);"
-                                    onmouseover="this.style.transform='scale(1.04)';this.style.boxShadow='0 4px 20px rgba(0,206,201,0.5)'" 
-                                    onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 12px rgba(0,206,201,0.3)'">
-                                <i class="fas fa-file-import"></i> Importar Seleccionados
-                            </button>
-                        </div>
-                    </div>
-                    <div id="listaArchivosTemas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;max-height:200px;overflow-y:auto;padding-right:4px;">
-                        <div style="text-align:center;padding:20px 10px;color:rgba(255,255,255,0.3);font-size:12px;grid-column:1/-1;">
-                            <i class="fas fa-info-circle" style="display:block;font-size:22px;margin-bottom:8px;color:rgba(255,255,255,0.2);"></i>
-                            Haz clic en <strong style="color:rgba(255,255,255,0.5);">"Buscar Archivos"</strong> para cargar archivos desde <strong style="color:rgba(255,255,255,0.4);font-family:monospace;">data/</strong>
-                            <br><span style="font-size:10px;color:rgba(255,255,255,0.2);">
-                                Formato: <strong style="color:#55EFC4;font-family:monospace;">CODIGO_NIVEL.json</strong> (ej: <strong style="color:#55EFC4;font-family:monospace;">${codigoIso}_A1.json</strong>)
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="importacionTemasProgress" style="display:none;margin-top:12px;background:rgba(255,255,255,0.06);border-radius:10px;padding:12px 16px;border:1px solid rgba(255,255,255,0.06);">
-                    <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:4px;">
-                        <span id="importacionTemasStatus">Preparando importación...</span>
-                        <span id="importacionTemasPorcentaje" style="font-weight:600;color:#74B9FF;">0%</span>
-                    </div>
-                    <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
-                        <div id="importacionTemasBar" style="height:100%;width:0%;background:linear-gradient(90deg,#00B894,#55EFC4,#00CEC9);border-radius:2px;transition:width 0.5s ease;"></div>
-                    </div>
-                    <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:4px;" id="importacionTemasDetalle">Inicializando...</div>
-                </div>
-                
-                <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;font-size:9px;color:rgba(255,255,255,0.3);border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;">
-                    <span>📂 <strong style="color:rgba(255,255,255,0.4);font-family:monospace;">data/CODIGO_NIVEL.json</strong></span>
-                    <span>🌍 ${nombreIdioma} (<strong style="color:#74B9FF;">${codigoIso}</strong>)</span>
-                    <span>📌 ${nombreVersion}</span>
-                    <span>📚 Los temas se importan como <strong style="color:#55EFC4;">"En Curso"</strong></span>
-                    <span>🔄 Sincronización automática</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // ============================================================
-    // CARGAR ARCHIVOS REALES DE LA CARPETA data/ - CORREGIDO PARA APK
-    // ============================================================
-
-    async _cargarArchivosTemasNivel() {
-        const core = this._getCore();
-        
-        let idiomaActivo = gestorIdiomas?.getIdiomaActivo?.() || 'es';
-        let codigoIdioma = this._obtenerCodigoIso(idiomaActivo);
-        
-        const nombreLower = idiomaActivo.toLowerCase().trim();
-        if (this._MAP_NOMBRE_A_ISO[nombreLower]) {
-            codigoIdioma = this._MAP_NOMBRE_A_ISO[nombreLower];
-            console.log(`🔄 Convertido "${idiomaActivo}" → "${codigoIdioma}"`);
+            } catch (error) {
+                console.error('❌ Error saliendo de la historia:', error);
+                this.core?.mostrarToast('❌ Error al salir de la historia', 'error');
+            }
         }
-        
-        const nombreIdioma = this._getNombreIdioma(codigoIdioma);
-        
-        core?.mostrarToast(`🔍 Buscando archivos en data/ para ${nombreIdioma} (${codigoIdioma})...`, 'info');
-        
-        try {
-            // 🔥 ARRAY DE RUTAS POSIBLES PARA ENCONTRAR LOS ARCHIVOS
-            const posiblesRutas = [
-                'data/',
-                './data/',
-                '../data/',
-                'assets/data/',
-                './assets/data/',
-                '../assets/data/',
-                'www/data/',
-                './www/data/',
-                '../www/data/',
-                'app/data/',
-                './app/data/',
-                '../app/data/',
-                'file:///data/',
-                'file:///assets/data/',
-                'file:///www/data/',
-            ];
+
+        // ============================================================
+        // MOSTRAR MODAL DE TEMA COMPLETADO
+        // ============================================================
+
+        async _mostrarModalTemaCompletado(tema) {
+            if (!tema) return;
             
-            const archivosPosibles = [
-                { nombre: `${codigoIdioma}_A1.json`, idioma: codigoIdioma, nivel: 'A1' },
-                { nombre: `${codigoIdioma}_A2.json`, idioma: codigoIdioma, nivel: 'A2' },
-                { nombre: `${codigoIdioma}_B1.json`, idioma: codigoIdioma, nivel: 'B1' },
-                { nombre: `${codigoIdioma}_B2.json`, idioma: codigoIdioma, nivel: 'B2' },
-                { nombre: `${codigoIdioma}_C1.json`, idioma: codigoIdioma, nivel: 'C1' },
-                { nombre: `${codigoIdioma}_C2.json`, idioma: codigoIdioma, nivel: 'C2' }
-            ];
-            
-            let archivosExistentes = [];
-            let rutaEncontrada = null;
-            
-            // 🔥 PROBAR TODAS LAS RUTAS POSIBLES
-            for (const rutaBase of posiblesRutas) {
-                if (archivosExistentes.length > 0) break;
-                
-                console.log(`🔍 Probando ruta: ${rutaBase}`);
-                
-                for (const archivo of archivosPosibles) {
-                    try {
-                        let url = rutaBase + archivo.nombre;
+            const modalHTML = `
+                <div id="modalTemaCompletado" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0,0,0,0.7);
+                    backdrop-filter: blur(10px);
+                    z-index: 100001;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    padding: 20px;
+                    animation: fadeIn 0.3s ease;
+                ">
+                    <div style="
+                        background: var(--white, #ffffff);
+                        border-radius: 20px;
+                        padding: 30px 35px;
+                        max-width: 450px;
+                        width: 100%;
+                        text-align: center;
+                        box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+                        animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    ">
+                        <div style="font-size: 64px; margin-bottom: 12px;">🎉</div>
+                        <h2 style="font-size: 24px; font-weight: 800; color: var(--dark); margin-bottom: 8px;">¡Tema Completado!</h2>
+                        <p style="font-size: 16px; color: var(--gray); margin-bottom: 16px;">
+                            Has completado todas las historias del tema <strong>"${tema.nombre}"</strong>.
+                        </p>
                         
-                        // En modo APK, usar XMLHttpRequest para archivos locales
-                        if (this._esModoAPK) {
-                            const xhr = new XMLHttpRequest();
-                            xhr.open('GET', url, false);
-                            try {
-                                xhr.send();
-                                if (xhr.status === 200 || xhr.status === 0) {
-                                    if (!archivosExistentes.some(a => a.nombre === archivo.nombre)) {
-                                        archivosExistentes.push(archivo);
-                                        rutaEncontrada = rutaBase;
-                                        console.log(`✅ Archivo encontrado en ${rutaBase}: ${archivo.nombre}`);
-                                    }
-                                }
-                            } catch (e) {
-                                // Falló
-                            }
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; padding: 12px; background: var(--bg); border-radius: 12px;">
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--success);">${tema.historiasIds?.length || 0}</div>
+                                <div style="font-size: 10px; color: var(--gray); text-transform: uppercase;">Historias</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--success);">${tema.frases || 0}</div>
+                                <div style="font-size: 10px; color: var(--gray); text-transform: uppercase;">Frases</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 20px; font-weight: 800; color: var(--success);">100%</div>
+                                <div style="font-size: 10px; color: var(--gray); text-transform: uppercase;">Progreso</div>
+                            </div>
+                        </div>
+                        
+                        <div style="background: var(--success)08; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; border: 1px solid var(--success);">
+                            <p style="color: var(--success); font-weight: 600; margin: 0;">
+                                ✅ El tema se ha marcado como completado.
+                            </p>
+                        </div>
+                        
+                        <button onclick="this.closest('div[style]').remove(); window.uiCore.irAModulo('temas')" class="btn-primary" style="
+                            padding: 12px 30px;
+                            font-size: 16px;
+                            font-weight: 700;
+                            border: none;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            background: linear-gradient(135deg, #6C5CE7, #A29BFE);
+                            color: white;
+                            transition: all 0.3s;
+                        " onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 20px rgba(108,92,231,0.3)'" onmouseout="this.style.transform='none'; this.style.boxShadow='none'">
+                            📚 Ir a Temas
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            const existing = document.getElementById('modalTemaCompletado');
+            if (existing) existing.remove();
+            
+            const container = document.getElementById('cardContainer');
+            if (container) {
+                container.insertAdjacentHTML('beforeend', modalHTML);
+            } else {
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            }
+        }
+
+        // ============================================================
+        // ACTUALIZAR PROGRESO EN UI
+        // ============================================================
+
+        _actualizarProgresoUI(progreso) {
+            try {
+                const container = document.getElementById('cardContainer');
+                if (!container) return;
+                
+                const barra = container.querySelector('.progress-bar-inline');
+                if (barra) {
+                    barra.style.width = Math.min(100, progreso) + '%';
+                }
+                
+                const label = container.querySelector('.progress-label-inline');
+                if (label) {
+                    label.textContent = `${Math.min(100, progreso)}%`;
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // RENDERIZADO PRINCIPAL - DISEÑO INMERSIVO CON MODO MÚLTIPLE CORREGIDO
+        // ============================================================
+
+        async _renderizarFraseInteractiva() {
+            if (this._renderizando) return;
+            if (this._renderTimeout) {
+                clearTimeout(this._renderTimeout);
+                this._renderTimeout = null;
+            }
+            
+            this._renderizando = true;
+            this._modoVista = 'frase';
+            this._cerrandoLibro = false;
+            this._eventosEnlazados = false;
+            this._enlaceIntentos = 0;
+            
+            try {
+                const container = document.getElementById('cardContainer');
+                if (!container || !pipeline?.fraseActual) {
+                    this._renderizando = false;
+                    return;
+                }
+
+                await this._recargarProgresoCompleto();
+                await this._cargarHistoriaCompletaContexto();
+                
+                const frase = pipeline.fraseActual;
+                const progreso = frase.progreso || {};
+                const rcn = progreso.rcn || 0;
+                const fase = pipeline.fases.find(f => f.id === pipeline.faseActual);
+                const esJeroglifico = frase.esJeroglifico || false;
+                const modo = this._modoEstudio;
+                const total = pipeline.frases?.length || 0;
+                const actual = (pipeline.indiceFrase !== undefined) ? pipeline.indiceFrase + 1 : 0;
+                
+                // Datos de modo inverso
+                let modoData = { mostrar: frase.original, ocultar: frase.traduccion, esInverso: false };
+                if (window.modoInverso) {
+                    modoData = window.modoInverso.getFraseParaEstudio(frase);
+                }
+                const isInverso = modoData.esInverso;
+                
+                // Transcripción
+                let transcripcion = '';
+                try {
+                    if (esJeroglifico) {
+                        transcripcion = frase.pinyinCompleto || frase.segmentacion?.pinyin || '';
+                    } else {
+                        transcripcion = await this._obtenerTranscripcionFrase(frase);
+                    }
+                } catch (e) { transcripcion = ''; }
+                
+                // Favorito
+                let esFavorita = false;
+                try {
+                    if (window.gestorFavoritos) {
+                        if (!window.gestorFavoritos._initDone) await window.gestorFavoritos.init();
+                        esFavorita = await window.gestorFavoritos.estaEnFavoritos('frase', frase.id);
+                    }
+                } catch (e) { esFavorita = false; }
+                
+                // Origen
+                const origen = this._origenHistoriaActual || pipeline.getOrigenHistoriaActual?.() || null;
+                let esCruzada = false, esTono = false;
+                try {
+                    const historia = await db.get('historias', pipeline._historiaIdActual);
+                    if (historia) {
+                        esCruzada = historia._esOndaCruzada === true;
+                        esTono = historia._esTono === true;
+                    }
+                } catch (e) {}
+                
+                // 🔥 COLORES DINÁMICOS SEGÚN RCN
+                const rcnColor = rcn >= 4 ? '#00B894' : rcn >= 2 ? '#FDCB6E' : '#FF7675';
+                const rcnIcono = rcn >= 4 ? '🟣' : rcn >= 3 ? '🟢' : rcn >= 2 ? '🟡' : '🔴';
+                const rcnLabel = rcn >= 4 ? '¡Dominado!' : rcn >= 3 ? 'Consolidado' : rcn >= 2 ? 'En progreso' : 'Necesita práctica';
+                
+                // 🔥 ETIQUETA DE ORIGEN
+                let origenBadge = '';
+                if (origen === 'elipse') origenBadge = '<span class="origen-badge elipse">🌌 Elipse</span>';
+                else if (origen === 'cruzada' || esCruzada) origenBadge = '<span class="origen-badge cruzada">🌊 Cruzada</span>';
+                else if (origen === 'tonos' || esTono) origenBadge = '<span class="origen-badge tonos">🎵 Tonos</span>';
+                else if (origen === 'tema') origenBadge = '<span class="origen-badge tema">📚 Tema</span>';
+                
+                // ============================================================
+                // CONSTRUCCIÓN DEL HTML
+                // ============================================================
+                
+                let html = `
+                <div class="study-card" style="
+                    background: var(--white);
+                    border-radius: 24px;
+                    padding: 24px 20px 20px;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+                    border: 1px solid rgba(108,92,231,0.08);
+                    position: relative;
+                    overflow: hidden;
+                    font-family: var(--font);
+                ">
+                    <!-- DECORACIÓN DE FONDO -->
+                    <div style="position:absolute;top:-60px;right:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(108,92,231,0.04),transparent 70%);pointer-events:none;"></div>
+                    <div style="position:absolute;bottom:-80px;left:-80px;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(0,184,148,0.04),transparent 70%);pointer-events:none;"></div>
+                    
+                    <!-- CABECERA -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;position:relative;z-index:1;flex-wrap:wrap;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span class="fase-badge" style="display:inline-flex;align-items:center;gap:4px;padding:4px 14px;border-radius:20px;background:linear-gradient(135deg,var(--primary)12,var(--secondary)12);color:var(--primary);font-size:12px;font-weight:700;border:1px solid var(--primary)20;">
+                                ${fase ? fase.icono + ' ' + fase.nombre : 'Fase ' + pipeline.faseActual}
+                            </span>
+                            <span class="rcn-badge" style="display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:20px;background:${rcnColor}15;color:${rcnColor};font-size:12px;font-weight:600;border:1px solid ${rcnColor}30;">
+                                ${rcnIcono} RCN ${rcn.toFixed(1)} · ${rcnLabel}
+                            </span>
+                            ${origenBadge}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <button class="favorito-btn" onclick="window.UIStudy._toggleFraseFavorita(${frase.id || 0}, !${esFavorita})" style="background:none;border:none;font-size:24px;cursor:pointer;transition:all 0.3s;padding:0 4px;line-height:1;${esFavorita ? 'color:#FF6B6B;' : 'color:var(--gray-light);'}transform:${esFavorita ? 'scale(1.1)' : 'scale(1)'};" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='${esFavorita ? 'scale(1.1)' : 'scale(1)'}'">
+                                ${esFavorita ? '❤️' : '🤍'}
+                            </button>
+                            ${this._historiaActual.length > 0 ? `
+                                <button class="historia-btn" onclick="window.UIStudy._abrirHistoriaCompleta()" style="background:var(--bg);border:none;border-radius:12px;padding:6px 12px;font-size:12px;font-weight:600;color:var(--gray);cursor:pointer;transition:all 0.3s;display:flex;align-items:center;gap:4px;" onmouseover="this.style.background='var(--primary)08';this.style.color='var(--primary)'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--gray)'">
+                                    📖 <span style="font-size:10px;background:var(--primary);color:white;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;">${this._historiaActual.length}</span>
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                    
+                    <!-- PROGRESO DE HISTORIA -->
+                    ${this._progresoMostrado > 0 && this._progresoMostrado < 100 ? `
+                        <div style="margin-bottom:14px;position:relative;z-index:1;">
+                            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray);margin-bottom:2px;">
+                                <span>📖 Progreso de la historia</span>
+                                <span style="font-weight:700;color:var(--primary);">${this._progresoMostrado}%</span>
+                            </div>
+                            <div style="height:4px;background:var(--bg);border-radius:4px;overflow:hidden;">
+                                <div class="progress-bar-inline" style="height:100%;width:${this._progresoMostrado}%;background:linear-gradient(90deg,var(--primary),var(--success));border-radius:4px;transition:width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);"></div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- FRASE PRINCIPAL -->
+                    <div class="frase-container" style="text-align:center;padding:20px 12px 16px;position:relative;z-index:1;background:linear-gradient(135deg,var(--bg),var(--white));border-radius:16px;border:1px solid var(--light);margin-bottom:16px;">
+                        ${isInverso ? `
+                            <div style="font-size:13px;color:var(--secondary);margin-bottom:8px;font-weight:600;letter-spacing:0.5px;">
+                                🔄 Modo Inverso · Traduce al idioma objetivo
+                            </div>
+                        ` : ''}
+                        <div style="font-size:${esJeroglifico ? '34px' : '26px'};font-weight:${esJeroglifico ? '700' : '700'};color:var(--dark);line-height:1.4;letter-spacing:${esJeroglifico ? '2px' : '0px'};padding:4px 0;">
+                            ${modoData.mostrar || frase.original}
+                        </div>
+                        ${transcripcion ? `
+                            <div style="font-size:16px;color:${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};margin-top:6px;letter-spacing:1.5px;font-weight:500;padding:6px 18px;background:${esJeroglifico ? 'var(--primary)06' : 'var(--secondary)06'};border-radius:12px;display:inline-block;border:1px solid ${esJeroglifico ? 'var(--primary)20' : 'var(--secondary)20'};font-family:var(--font);">
+                                ${esJeroglifico ? '🔊' : '🎤'} ${transcripcion}
+                            </div>
+                        ` : ''}
+                        ${modo === 'flashcard' ? `
+                            <div style="margin-top:12px;">
+                                ${this._mostrandoRespuesta ? `
+                                    <div style="padding:14px 20px;background:var(--primary)06;border-radius:12px;font-size:18px;font-weight:600;color:var(--primary);border:2px dashed var(--primary)30;animation:fadeUp 0.3s ease;">
+                                        ${modoData.ocultar}
+                                    </div>
+                                    ${this._pistaActual ? `
+                                        <div style="margin-top:8px;font-size:13px;color:var(--gray);background:var(--bg);padding:6px 14px;border-radius:8px;display:inline-block;">
+                                            💡 ${this._pistaActual}
+                                        </div>
+                                    ` : ''}
+                                ` : `
+                                    <div style="font-size:13px;color:var(--gray-light);padding:6px 0;">
+                                        👆 Haz clic en "Mostrar" para ver la traducción
+                                    </div>
+                                `}
+                            </div>
+                        ` : modo === 'escritura' ? `
+                            <div style="margin-top:8px;font-size:13px;color:var(--gray-light);">
+                                ✍️ Escribe la traducción en el campo de abajo
+                            </div>
+                        ` : modo === 'multiple' ? `
+                            <div style="margin-top:8px;font-size:13px;color:var(--gray-light);">
+                                🤔 Selecciona la opción correcta
+                            </div>
+                        ` : modo === 'escucha' ? `
+                            <div style="margin-top:8px;font-size:13px;color:var(--gray-light);">
+                                👂 Escucha y repite en voz alta
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <!-- BOTONES DE ACCIÓN (FLASHCARD Y ESCUCHA) -->
+                    ${modo === 'flashcard' ? `
+                        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;position:relative;z-index:1;flex-wrap:wrap;">
+                            <button class="action-btn action-show" onclick="window.UIStudy._toggleFlashcardRespuesta()" style="padding:10px 24px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;background:${this._mostrandoRespuesta ? 'var(--bg)' : 'linear-gradient(135deg, #6C5CE7, #A29BFE)'};color:${this._mostrandoRespuesta ? 'var(--gray)' : 'white'};box-shadow:${this._mostrandoRespuesta ? 'none' : '0 4px 16px rgba(108,92,231,0.3)'};flex:1;min-width:120px;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='none'">
+                                <i class="fas ${this._mostrandoRespuesta ? 'fa-eye-slash' : 'fa-eye'}"></i> ${this._mostrandoRespuesta ? 'Ocultar' : 'Mostrar'}
+                            </button>
+                            <button class="action-btn action-hint" onclick="window.UIStudy._generarPista()" style="padding:10px 24px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--bg);color:var(--gray);flex:1;min-width:120px;border:2px solid var(--light);" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--light)';this.style.color='var(--gray)'">
+                                💡 Pista
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    ${modo === 'escucha' ? `
+                        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;position:relative;z-index:1;flex-wrap:wrap;">
+                            <button class="action-btn action-listen" onclick="window.UIStudy._reproducirFrase('${(modoData.mostrar || frase.original).replace(/'/g, "\\'")}', '${frase.idioma || pipeline.idiomaObjetivo || 'es'}')" style="padding:12px 30px;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.3s;background:linear-gradient(135deg, #00CEC9, #00B894);color:white;box-shadow:0 4px 16px rgba(0,206,201,0.3);flex:1;min-width:140px;" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 30px rgba(0,206,201,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(0,206,201,0.3)'">
+                                🔊 Reproducir
+                            </button>
+                            ${!this._mostrandoRespuesta ? `
+                                <button class="action-btn action-show" onclick="window.UIStudy._toggleFlashcardRespuesta()" style="padding:12px 24px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--bg);color:var(--gray);border:2px solid var(--light);flex:1;min-width:120px;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--light)';this.style.color='var(--gray)'">
+                                    Mostrar traducción
+                                </button>
+                            ` : `
+                                <div style="padding:12px 20px;background:var(--primary)06;border-radius:12px;font-size:16px;font-weight:600;color:var(--primary);border:2px dashed var(--primary)30;flex:1;min-width:120px;text-align:center;">
+                                    ${modoData.ocultar}
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- BOTONES DE RESPUESTA (FLASHCARD Y ESCUCHA) -->
+                    ${(modo === 'flashcard' || modo === 'escucha') ? `
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px;position:relative;z-index:1;">
+                            <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:10px 4px;border:none;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--danger)10;color:var(--danger);border:2px solid var(--danger)20;" onmouseover="this.style.background='var(--danger)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--danger)10';this.style.color='var(--danger)';this.style.transform='none'">
+                                ❌<br><span style="font-size:10px;">Fallo</span>
+                            </button>
+                            <button class="respuesta-btn duda" onclick="window.UIStudy._responderEstudio('duda')" style="padding:10px 4px;border:none;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--warning)10;color:var(--warning);border:2px solid var(--warning)20;" onmouseover="this.style.background='var(--warning)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--warning)10';this.style.color='var(--warning)';this.style.transform='none'">
+                                ❓<br><span style="font-size:10px;">Duda</span>
+                            </button>
+                            <button class="respuesta-btn parcial" onclick="window.UIStudy._responderEstudio('parcial')" style="padding:10px 4px;border:none;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--secondary)10;color:var(--secondary);border:2px solid var(--secondary)20;" onmouseover="this.style.background='var(--secondary)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--secondary)10';this.style.color='var(--secondary)';this.style.transform='none'">
+                                ➖<br><span style="font-size:10px;">Parcial</span>
+                            </button>
+                            <button class="respuesta-btn correcto" onclick="window.UIStudy._responderEstudio('correcto')" style="padding:10px 4px;border:none;border-radius:12px;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--success)10;color:var(--success);border:2px solid var(--success)20;" onmouseover="this.style.background='var(--success)';this.style.color='white';this.style.transform='scale(1.02)'" onmouseout="this.style.background='var(--success)10';this.style.color='var(--success)';this.style.transform='none'">
+                                ✅<br><span style="font-size:10px;">Correcto</span>
+                            </button>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- MODO ESCRITURA -->
+                    ${modo === 'escritura' ? `
+                        <div style="margin-bottom:12px;position:relative;z-index:1;">
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <input type="text" id="respuestaEscritura" placeholder="✍️ Escribe la traducción..." style="flex:1;padding:12px 16px;border:2px solid var(--light);border-radius:12px;font-size:16px;font-family:var(--font);background:var(--bg);transition:all 0.3s;" onfocus="this.style.borderColor='var(--primary)';this.style.boxShadow='0 0 0 4px var(--primary)08'" onblur="this.style.borderColor='var(--light)';this.style.boxShadow='none'">
+                                <button id="btnValidarEscritura" style="padding:12px 24px;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;background:linear-gradient(135deg, #6C5CE7, #A29BFE);color:white;white-space:nowrap;box-shadow:0 4px 16px rgba(108,92,231,0.3);" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 30px rgba(108,92,231,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(108,92,231,0.3)'">
+                                    ✅ Validar
+                                </button>
+                            </div>
+                            ${this._ultimaRespuesta ? `
+                                <div style="margin-top:10px;padding:12px 16px;border-radius:12px;background:${this._ultimaRespuesta.correcto ? 'var(--success)10' : this._ultimaRespuesta.aproximado ? 'var(--warning)10' : 'var(--danger)10'};border-left:4px solid ${this._ultimaRespuesta.correcto ? 'var(--success)' : this._ultimaRespuesta.aproximado ? 'var(--warning)' : 'var(--danger)'};animation:fadeUp 0.3s ease;">
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span style="font-size:20px;">${this._ultimaRespuesta.correcto ? '✅' : this._ultimaRespuesta.aproximado ? '🟡' : '❌'}</span>
+                                        <div>
+                                            <div style="font-weight:600;color:${this._ultimaRespuesta.correcto ? 'var(--success)' : this._ultimaRespuesta.aproximado ? 'var(--warning)' : 'var(--danger)'};">${this._ultimaRespuesta.mensaje}</div>
+                                            ${!this._ultimaRespuesta.correcto && !this._ultimaRespuesta.aproximado ? `
+                                                <div style="font-size:13px;color:var(--gray);margin-top:2px;">
+                                                    Correcta: <strong style="color:var(--primary);">${this._ultimaRespuesta.correctaEsperada}</strong>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                        ${this._ultimaRespuesta.correcto ? `
+                                            <button class="respuesta-btn correcto" onclick="window.UIStudy._responderEstudio('correcto')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--success);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">✅ Correcto</button>
+                                        ` : this._ultimaRespuesta.aproximado ? `
+                                            <button class="respuesta-btn parcial" onclick="window.UIStudy._responderEstudio('parcial')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--secondary);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">➖ Parcial</button>
+                                            <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--danger);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">❌ Fallo</button>
+                                        ` : `
+                                            <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--danger);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">❌ Fallo</button>
+                                        `}
+                                    </div>
+                                </div>
+                            ` : `
+                                <div style="text-align:center;font-size:12px;color:var(--gray-light);margin-top:6px;">
+                                    💡 Escribe y pulsa Validar o presiona Enter
+                                </div>
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- MODO MÚLTIPLE -->
+                    ${modo === 'multiple' ? `
+                        <div style="margin-bottom:12px;position:relative;z-index:1;">
+                            ${this._opcionesMultiple.length === 0 ? `
+                                <div style="text-align:center;padding:20px;color:var(--gray);">
+                                    <i class="fas fa-spinner fa-spin" style="font-size:24px;"></i>
+                                    <div style="margin-top:8px;">Generando opciones...</div>
+                                </div>
+                            ` : `
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    ${this._opcionesMultiple.map((opcion) => {
+                                        const correcta = isInverso ? frase.original : frase.traduccion;
+                                        const isCorrect = opcion === correcta;
+                                        const isSelected = this._ultimaRespuesta && opcion === this._ultimaRespuesta.opcionSeleccionada;
+                                        let bg = 'var(--white)';
+                                        let border = 'var(--light)';
+                                        let color = 'var(--dark)';
+                                        let icono = '';
+                                        if (this._ultimaRespuesta) {
+                                            if (isCorrect) {
+                                                bg = 'var(--success)10';
+                                                border = 'var(--success)';
+                                                color = 'var(--success)';
+                                                icono = '✅ ';
+                                            } else if (isSelected && !isCorrect) {
+                                                bg = 'var(--danger)10';
+                                                border = 'var(--danger)';
+                                                color = 'var(--danger)';
+                                                icono = '❌ ';
+                                            }
+                                        }
+                                        const disabled = this._ultimaRespuesta ? 'style="cursor:default;opacity:0.8;"' : '';
+                                        return `
+                                            <div class="multiple-opcion" data-texto="${opcion.replace(/'/g, "\\'")}" ${disabled} style="padding:14px 12px;border-radius:12px;border:2px solid ${border};background:${bg};color:${color};cursor:${this._ultimaRespuesta ? 'default' : 'pointer'};text-align:center;font-size:${opcion.length > 15 ? '14px' : '16px'};font-weight:600;transition:all 0.3s;" onmouseover="${!this._ultimaRespuesta ? "this.style.borderColor='var(--primary)';this.style.background='var(--primary)04';this.style.transform='scale(1.02)'" : ''}" onmouseout="${!this._ultimaRespuesta ? "this.style.borderColor='var(--light)';this.style.background='var(--white)';this.style.transform='none'" : ''}">
+                                                ${icono}${opcion}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                ${this._ultimaRespuesta ? `
+                                    <div style="margin-top:10px;padding:12px 16px;border-radius:12px;background:${this._ultimaRespuesta.correcto ? 'var(--success)10' : 'var(--danger)10'};border-left:4px solid ${this._ultimaRespuesta.correcto ? 'var(--success)' : 'var(--danger)'};animation:fadeUp 0.3s ease;">
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <span style="font-size:20px;">${this._ultimaRespuesta.correcto ? '✅' : '❌'}</span>
+                                            <div>
+                                                <div style="font-weight:600;color:${this._ultimaRespuesta.correcto ? 'var(--success)' : 'var(--danger)'};">${this._ultimaRespuesta.mensaje}</div>
+                                                ${!this._ultimaRespuesta.correcto ? `
+                                                    <div style="font-size:13px;color:var(--gray);margin-top:2px;">
+                                                        Correcta: <strong style="color:var(--primary);">${this._ultimaRespuesta.correctaEsperada}</strong>
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                                            ${this._ultimaRespuesta.correcto ? `
+                                                <button class="respuesta-btn correcto" onclick="window.UIStudy._responderEstudio('correcto')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--success);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">✅ Correcto</button>
+                                            ` : `
+                                                <button class="respuesta-btn fallo" onclick="window.UIStudy._responderEstudio('fallo')" style="padding:6px 16px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:var(--danger);color:white;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='none'">❌ Fallo</button>
+                                            `}
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div style="text-align:center;font-size:12px;color:var(--gray-light);margin-top:6px;">
+                                        🤔 Selecciona una opción
+                                    </div>
+                                `}
+                            `}
+                        </div>
+                    ` : ''}
+                    
+                    <!-- PALABRAS DESGLOSADAS -->
+                    ${await this._renderPalabrasDesglosadasRobusto(frase) || ''}
+                    
+                    <!-- NAVEGACIÓN -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:2px solid var(--bg);position:relative;z-index:1;gap:12px;">
+                        <button class="nav-btn prev" onclick="window.UIStudy._fraseAnterior()" style="padding:10px 18px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;background:var(--bg);color:var(--gray);border:2px solid var(--light);display:flex;align-items:center;gap:6px;" onmouseover="this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" onmouseout="this.style.borderColor='var(--light)';this.style.color='var(--gray)'">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        <div style="text-align:center;">
+                            <div style="font-size:20px;font-weight:800;color:var(--primary);">${actual}</div>
+                            <div style="font-size:11px;color:var(--gray-light);">/${total}</div>
+                        </div>
+                        <button class="nav-btn next" onclick="window.UIStudy._fraseSiguiente()" style="padding:10px 18px;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;background:linear-gradient(135deg, #6C5CE7, #A29BFE);color:white;box-shadow:0 4px 16px rgba(108,92,231,0.3);display:flex;align-items:center;gap:6px;" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 8px 30px rgba(108,92,231,0.4)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 4px 16px rgba(108,92,231,0.3)'">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- SELECTOR DE MODO -->
+                    <div style="margin-top:16px;padding-top:14px;border-top:2px solid var(--bg);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;position:relative;z-index:1;">
+                        ${['flashcard', 'escritura', 'multiple', 'escucha'].map(m => `
+                            <button class="modo-btn ${this._modoEstudio === m ? 'active' : ''}" data-modo="${m}" onclick="window.UIStudy.cambiarModoEstudio('${m}')" style="padding:6px 14px;border:none;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.3s;background:${this._modoEstudio === m ? 'var(--primary)' : 'var(--bg)'};color:${this._modoEstudio === m ? 'white' : 'var(--gray)'};border:2px solid ${this._modoEstudio === m ? 'var(--primary)' : 'var(--light)'};box-shadow:${this._modoEstudio === m ? '0 2px 12px rgba(108,92,231,0.3)' : 'none'};display:flex;align-items:center;gap:4px;" onmouseover="${this._modoEstudio !== m ? "this.style.borderColor='var(--primary)';this.style.color='var(--primary)'" : ''}" onmouseout="${this._modoEstudio !== m ? "this.style.borderColor='var(--light)';this.style.color='var(--gray)'" : ''}">
+                                ${m === 'flashcard' ? '🃏' : m === 'escritura' ? '✍️' : m === 'multiple' ? '📋' : '🎧'} ${m.charAt(0).toUpperCase() + m.slice(1)}
+                            </button>
+                        `).join('')}
+                    </div>
+                    
+                </div>
+                `;
+                
+                container.innerHTML = html;
+                
+                // ============================================================
+                // ENLAZAR EVENTOS
+                // ============================================================
+                
+                if (modo === 'escritura') {
+                    setTimeout(() => { this._enlazarEventosEscritura(); }, 50);
+                }
+                if (modo === 'multiple') {
+                    setTimeout(() => { this._enlazarEventosMultiple(); }, 50);
+                }
+                
+                // Verificar progreso
+                await this._verificarProgresoTema();
+                
+            } catch (e) {
+                console.error('❌ Error renderizando frase:', e);
+                this._renderizarErrorFallback();
+            } finally {
+                this._renderizando = false;
+            }
+        }
+
+        // ============================================================
+        // GENERAR OPCIONES MÚLTIPLES - VERSIÓN ESTABLE
+        // ============================================================
+
+        async _generarOpcionesMultiplesConGroq(frase, modoData) {
+            // Si ya hay opciones generadas, devolverlas inmediatamente
+            if (this._opcionesMultiple && this._opcionesMultiple.length > 0) {
+                this._generandoOpciones = false;
+                return this._opcionesMultiple;
+            }
+            
+            // Si ya se está generando, esperar con timeout
+            if (this._generandoOpciones) {
+                return new Promise((resolve) => {
+                    let intentos = 0;
+                    const maxIntentos = 20; // 4 segundos máximo
+                    const checkInterval = setInterval(() => {
+                        intentos++;
+                        if (this._opcionesMultiple && this._opcionesMultiple.length > 0) {
+                            clearInterval(checkInterval);
+                            this._generandoOpciones = false;
+                            resolve(this._opcionesMultiple);
+                        } else if (intentos >= maxIntentos) {
+                            clearInterval(checkInterval);
+                            this._generandoOpciones = false;
+                            // Fallback directo
+                            this._generarOpcionesMultiplesFallback(frase, modoData).then(resolve);
+                        }
+                    }, 200);
+                });
+            }
+            
+            this._generandoOpciones = true;
+            
+            try {
+                const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                const esInverso = modoData.esInverso;
+                
+                let correcta;
+                if (esInverso) {
+                    correcta = frase.original;
+                } else {
+                    correcta = frase.traduccion;
+                }
+                
+                // === INTENTAR CON GROQ ===
+                if (window.vigia && window.vigia.enLinea && window.vigia._apiKeyValidada) {
+                    try {
+                        console.log('🧠 Generando opciones con Groq...');
+                        
+                        // Obtener frases similares
+                        const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
+                        let candidatas = [];
+                        
+                        if (esInverso) {
+                            candidatas = todasFrases
+                                .filter(f => f.id !== frase.id && f.original && f.original !== correcta)
+                                .sort(() => Math.random() - 0.5)
+                                .slice(0, 10)
+                                .map(f => f.original);
                         } else {
-                            // En modo web, usar fetch
-                            const response = await fetch(url, { method: 'HEAD' });
-                            if (response.ok) {
-                                if (!archivosExistentes.some(a => a.nombre === archivo.nombre)) {
-                                    archivosExistentes.push(archivo);
-                                    rutaEncontrada = rutaBase;
-                                    console.log(`✅ Archivo encontrado en ${rutaBase}: ${archivo.nombre}`);
-                                }
+                            candidatas = todasFrases
+                                .filter(f => f.id !== frase.id && f.traduccion && f.traduccion !== correcta && f.traduccion.trim() !== '')
+                                .sort(() => Math.random() - 0.5)
+                                .slice(0, 10)
+                                .map(f => f.traduccion);
+                        }
+                        
+                        // Si no hay candidatas, usar fallback
+                        if (candidatas.length < 3) {
+                            console.log('⚠️ Sin candidatas suficientes, usando fallback');
+                            return this._generarOpcionesMultiplesFallback(frase, modoData);
+                        }
+                        
+                        // Prompt completo
+                        const prompt = `Genera 3 opciones INCORRECTAS (distractores) para una pregunta de opción múltiple sobre traducción de idiomas.
+
+PREGUNTA: Traduce "${esInverso ? frase.traduccion : frase.original}" al ${esInverso ? idioma : 'español'}.
+
+RESPUESTA CORRECTA: "${correcta}"
+
+POSIBLES DISTRACTORES (inspírate en estas, NO las copies exactamente):
+${candidatas.slice(0, 6).map((c, i) => `${i+1}. "${c}"`).join('\n')}
+
+REGLAS:
+1. Responde SOLO con un array JSON de 3 strings.
+2. Las opciones deben ser PLAUSIBLES pero INCORRECTAS.
+3. NO incluyas la respuesta correcta.
+4. Formato: ["opcion1", "opcion2", "opcion3"]`;
+
+                        const resultado = await window.vigia._consultarGroq(prompt, 'json');
+                        
+                        if (resultado && Array.isArray(resultado) && resultado.length >= 3) {
+                            const opcionesFiltradas = resultado
+                                .filter(o => o && typeof o === 'string' && o.trim() !== '' && o !== correcta)
+                                .slice(0, 3);
+                            
+                            if (opcionesFiltradas.length >= 3) {
+                                const opcionesFinales = [correcta, ...opcionesFiltradas];
+                                const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                                
+                                this._opcionesMultiple = mezcladas;
+                                this._metodoValidacion = 'online';
+                                this._generandoOpciones = false;
+                                console.log('✅ Opciones generadas con Groq:', mezcladas);
+                                return mezcladas;
                             }
                         }
-                    } catch (e) {
-                        // Archivo no existe en esta ruta
+                        
+                        console.log('⚠️ Groq no dio opciones válidas, usando fallback');
+                        return this._generarOpcionesMultiplesFallback(frase, modoData);
+                        
+                    } catch (error) {
+                        console.warn('⚠️ Error con Groq:', error);
+                        return this._generarOpcionesMultiplesFallback(frase, modoData);
                     }
+                } else {
+                    console.log('📝 Vigía no disponible, usando generación offline');
+                    return this._generarOpcionesMultiplesFallback(frase, modoData);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error en generación múltiple:', error);
+                this._generandoOpciones = false;
+                return this._generarOpcionesMultiplesFallback(frase, modoData);
+            }
+        }
+
+        // ============================================================
+        // GENERAR OPCIONES MÚLTIPLES - FALLBACK OFFLINE
+        // ============================================================
+
+        async _generarOpcionesMultiplesFallback(frase, modoData) {
+            console.log('📝 Generando opciones múltiples OFFLINE...');
+            
+            try {
+                const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                const esInverso = modoData.esInverso;
+                
+                let correcta;
+                if (esInverso) {
+                    correcta = frase.original;
+                } else {
+                    correcta = frase.traduccion;
+                }
+                
+                // Obtener frases del mismo idioma
+                const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
+                let opciones = [];
+                
+                if (esInverso) {
+                    opciones = todasFrases
+                        .filter(f => f.id !== frase.id && f.original && f.original !== correcta)
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, 10)
+                        .map(f => f.original);
+                } else {
+                    opciones = todasFrases
+                        .filter(f => f.id !== frase.id && f.traduccion && f.traduccion !== correcta && f.traduccion.trim() !== '')
+                        .sort(() => Math.random() - 0.5)
+                        .slice(0, 10)
+                        .map(f => f.traduccion);
+                }
+                
+                // Eliminar duplicados y vacíos
+                opciones = [...new Set(opciones.filter(o => o && o.trim() !== '' && o !== correcta))];
+                
+                // Si hay suficientes opciones
+                if (opciones.length >= 3) {
+                    const seleccionadas = opciones.slice(0, 3);
+                    const opcionesFinales = [correcta, ...seleccionadas];
+                    const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                    
+                    this._opcionesMultiple = mezcladas;
+                    this._metodoValidacion = 'offline';
+                    this._generandoOpciones = false;
+                    console.log('✅ Opciones generadas OFFLINE:', mezcladas);
+                    return mezcladas;
+                }
+                
+                // Si NO hay suficientes opciones, crear distractores sintéticos
+                console.log('⚠️ Generando distractores sintéticos...');
+                const distractores = this._generarDistractoresSinteticos(correcta, esInverso, idioma);
+                const opcionesFinales = [correcta, ...distractores];
+                const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                
+                this._opcionesMultiple = mezcladas;
+                this._metodoValidacion = 'offline';
+                this._generandoOpciones = false;
+                console.log('✅ Opciones sintéticas generadas:', mezcladas);
+                return mezcladas;
+                
+            } catch (error) {
+                console.error('❌ Error en fallback:', error);
+                // Fallback último recurso
+                const correcta = modoData.esInverso ? frase.original : frase.traduccion;
+                const opcionesFinales = [
+                    correcta,
+                    correcta + ' (variante 1)',
+                    correcta + ' (variante 2)',
+                    correcta + ' (variante 3)'
+                ];
+                const mezcladas = opcionesFinales.sort(() => Math.random() - 0.5);
+                
+                this._opcionesMultiple = mezcladas;
+                this._metodoValidacion = 'offline';
+                this._generandoOpciones = false;
+                console.log('✅ Opciones de último recurso:', mezcladas);
+                return mezcladas;
+            }
+        }
+
+        // ============================================================
+        // GENERAR DISTRACTORES SINTÉTICOS
+        // ============================================================
+
+        _generarDistractoresSinteticos(correcta, esInverso, idioma) {
+            const distractores = [];
+            const palabras = correcta.split(' ');
+            
+            // Distractor 1: cambiar una palabra
+            if (palabras.length > 1) {
+                const variante = palabras.map((p, i) => {
+                    if (i === 0 && p.length > 2) return p.slice(0, -1) + 's';
+                    return p;
+                }).join(' ');
+                if (variante !== correcta) distractores.push(variante);
+            }
+            
+            // Distractor 2: añadir palabra
+            if (palabras.length >= 1) {
+                const variante = palabras.join(' ') + ' extra';
+                if (variante !== correcta) distractores.push(variante);
+            }
+            
+            // Distractor 3: sinónimo aproximado
+            const sinonimos = esInverso ? 
+                ['otra', 'diferente', 'alternativa', 'similar'] :
+                ['otra cosa', 'diferente', 'alternativa', 'parecido'];
+            
+            for (const s of sinonimos) {
+                const variante = esInverso ? 
+                    s + ' ' + palabras.join(' ') :
+                    correcta + ' ' + s;
+                if (variante !== correcta && !distractores.includes(variante)) {
+                    distractores.push(variante);
+                    break;
                 }
             }
             
-            // 🔥 SI NO ENCONTRAMOS ARCHIVOS, MOSTRAR MENSAJE
-            if (archivosExistentes.length === 0) {
-                const container = document.getElementById('listaArchivosTemas');
-                if (container) {
+            // Si no hay distractores, usar genéricos
+            while (distractores.length < 3) {
+                const gen = esInverso ? 
+                    ['otra palabra', 'palabra diferente', 'alternativa'] : 
+                    ['otra opción', 'opción diferente', 'alternativa'];
+                for (const g of gen) {
+                    if (!distractores.includes(g) && g !== correcta) {
+                        distractores.push(g);
+                    }
+                }
+                // Evitar loop infinito
+                if (distractores.length >= 3) break;
+                // Último recurso
+                if (distractores.length < 3) {
+                    distractores.push('Opción ' + (distractores.length + 1));
+                }
+            }
+            
+            return distractores.slice(0, 3);
+        }
+
+        // ============================================================
+        // FALLBACK DE ERROR
+        // ============================================================
+
+        _renderizarErrorFallback() {
+            try {
+                const container = document.getElementById('cardContainer');
+                if (!container) return;
+                const frase = pipeline?.fraseActual;
+                if (!frase) {
                     container.innerHTML = `
-                        <div style="text-align:center;padding:24px 10px;color:rgba(255,255,255,0.4);font-size:12px;grid-column:1/-1;">
-                            <i class="fas fa-exclamation-triangle" style="display:block;font-size:28px;margin-bottom:10px;color:#FDCB6E;"></i>
-                            No se encontraron archivos en la carpeta <strong style="color:rgba(255,255,255,0.5);">data/</strong> para <strong>${nombreIdioma}</strong> (${codigoIdioma})
-                            <br><span style="font-size:10px;color:rgba(255,255,255,0.25);">
-                                💡 Guarda archivos con el formato <strong style="color:#55EFC4;font-family:monospace;">${codigoIdioma}_NIVEL.json</strong>
-                            </span>
-                            <br><span style="font-size:10px;color:rgba(255,255,255,0.15);">
-                                Ejemplo: <strong style="color:#55EFC4;font-family:monospace;">${codigoIdioma}_A1.json</strong>, <strong style="color:#55EFC4;font-family:monospace;">${codigoIdioma}_B1.json</strong>
-                            </span>
-                            ${this._esModoAPK ? `
-                                <br><br>
-                                <span style="font-size:10px;color:#74B9FF;">
-                                    📱 Modo APK detectado: Los archivos deben estar en la carpeta <strong>assets/data/</strong> del APK
-                                </span>
-                                <br>
-                                <span style="font-size:9px;color:rgba(255,255,255,0.2);">
-                                    🔧 Puedes generar el JSON con el <strong>Botón Super Power</strong> y guardarlo manualmente
-                                </span>
-                            ` : `
-                                <br><br>
-                                <span style="font-size:10px;color:#55EFC4;">
-                                    🔥 Puedes generar el JSON con el <strong>Botón Super Power</strong> arriba
-                                </span>
-                            `}
-                            <br><br>
-                            <button class="btn-secondary" onclick="window.UIConfig._mostrarAyudaImportacion()" 
-                                    style="padding:4px 16px;font-size:10px;background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.06);border-radius:4px;cursor:pointer;transition:all 0.2s;"
-                                    onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='rgba(255,255,255,0.06)'">
-                                <i class="fas fa-question-circle"></i> Ver Ayuda
+                        <div class="card" style="max-width:500px;padding:40px 30px;text-align:center;">
+                            <div style="font-size:48px;margin-bottom:16px;">⚠️</div>
+                            <p style="color:var(--gray);">Error al cargar la frase</p>
+                            <button class="btn-primary" onclick="window.UIStudy.cargar(window.UIStudy.core)" style="margin-top:12px;padding:8px 20px;">
+                                <i class="fas fa-sync"></i> Reintentar
                             </button>
                         </div>
                     `;
+                    return;
                 }
-                const count = document.getElementById('archivosCount');
-                if (count) count.textContent = '0';
-                this._archivosDisponibles = [];
-                this._archivosSeleccionados = new Set();
-                
-                const mensaje = this._esModoAPK 
-                    ? `ℹ️ No hay archivos en data/ para ${nombreIdioma}. Asegúrate de que estén en assets/data/ del APK. Formato: ${codigoIdioma}_NIVEL.json`
-                    : `ℹ️ No hay archivos en data/ para ${nombreIdioma}. Formato: ${codigoIdioma}_NIVEL.json`;
-                
-                core?.mostrarToast(mensaje, 'info');
+                const esJeroglifico = frase.esJeroglifico || false;
+                const hanzi = frase.segmentacion?.hanzi || frase.original || '';
+                container.innerHTML = `
+                    <div class="card" style="max-width:500px;margin:0 auto;text-align:center;padding:30px 20px;">
+                        <div style="font-size:32px;font-weight:700;color:var(--dark);">${esJeroglifico ? hanzi : frase.original}</div>
+                        ${frase.pinyinCompleto ? `<div style="font-size:16px;color:var(--gray-light);margin-top:4px;">🔊 ${frase.pinyinCompleto}</div>` : ''}
+                        <div style="font-size:18px;color:var(--gray);margin-top:8px;">→ ${frase.traduccion}</div>
+                        <button class="btn-primary" onclick="window.UIStudy.cargar(window.UIStudy.core)" style="margin-top:16px;padding:8px 20px;">
+                            <i class="fas fa-sync"></i> Recargar
+                        </button>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('❌ Error en fallback:', e);
+            }
+        }
+
+        // ============================================================
+        // CARGAR HISTORIA COMPLETA PARA CONTEXTO
+        // ============================================================
+
+        async _cargarHistoriaCompletaContexto() {
+            if (!pipeline || !pipeline.fraseActual) return;
+            try {
+                const frase = pipeline.fraseActual;
+                const historiaData = await pipeline.obtenerHistoriaCompletaDeFrase(frase.id);
+                if (historiaData) {
+                    this._historiaActual = historiaData.frases || [];
+                    this._historiaTitulo = historiaData.titulo || 'Historia sin título';
+                    this._historiaIdActual = historiaData.id;
+                } else {
+                    this._historiaActual = [];
+                    this._historiaTitulo = '';
+                    this._historiaIdActual = null;
+                }
+            } catch (e) {
+                this._historiaActual = [];
+            }
+        }
+
+        // ============================================================
+        // ABRIR HISTORIA COMPLETA
+        // ============================================================
+
+        async _abrirHistoriaCompleta() {
+            if (this._historiaActual.length === 0) {
+                this.core?.mostrarToast('📚 No hay historia completa disponible', 'warning');
                 return;
             }
+            this._modoVista = 'historia_completa';
+            await this._renderizarHistoriaCompletaDesdeLibro();
+        }
+
+        // ============================================================
+        // PALABRAS DESGLOSADAS - VERSIÓN ROBUSTA
+        // ============================================================
+
+        async _renderPalabrasDesglosadasRobusto(frase) {
+            if (!frase) return '';
             
-            // Guardar archivos disponibles y la ruta encontrada
-            this._archivosDisponibles = archivosExistentes;
-            this._archivosSeleccionados = new Set();
+            let palabras = [];
             
-            // Guardar la ruta para futuras importaciones
-            if (rutaEncontrada) {
-                this._carpetaData = rutaEncontrada;
-                this._rutaEncontrada = rutaEncontrada;
-                console.log(`📂 Ruta de datos establecida: ${this._carpetaData}`);
+            if (frase.palabras && Array.isArray(frase.palabras) && frase.palabras.length > 0) {
+                palabras = frase.palabras;
             }
             
-            this._renderizarListaArchivos(archivosExistentes);
+            if (palabras.length === 0 && this._historiaActual && this._historiaActual.length > 0) {
+                const historiaFrase = this._historiaActual.find(f => f.id === frase.id);
+                if (historiaFrase && historiaFrase.palabras && Array.isArray(historiaFrase.palabras) && historiaFrase.palabras.length > 0) {
+                    palabras = historiaFrase.palabras;
+                }
+            }
             
-            const count = document.getElementById('archivosCount');
-            if (count) count.textContent = archivosExistentes.length;
+            if (palabras.length === 0 && frase.id) {
+                try {
+                    const frasesDB = await db.obtenerFrases();
+                    const fraseDB = frasesDB.find(f => f.id === frase.id);
+                    if (fraseDB && fraseDB.palabras && Array.isArray(fraseDB.palabras) && fraseDB.palabras.length > 0) {
+                        palabras = fraseDB.palabras;
+                        frase.palabras = palabras;
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Error obteniendo palabras desde DB:', e);
+                }
+            }
             
-            core?.mostrarToast(`✅ ${archivosExistentes.length} archivo(s) encontrado(s) en data/ para ${nombreIdioma} (${codigoIdioma})`, 'success');
+            if (palabras.length === 0 && frase.original) {
+                const palabrasExtraidas = frase.original.split(/\s+/).filter(p => p.length > 0);
+                if (palabrasExtraidas.length > 0) {
+                    const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                    const esJeroglifico = this._esJeroglifico(idioma);
+                    for (const p of palabrasExtraidas) {
+                        palabras.push({
+                            palabra: p,
+                            hanzi: esJeroglifico ? p : '',
+                            familia: 'sin_clasificar',
+                            tipo: 'sustantivo',
+                            significado: p,
+                            pinyin: ''
+                        });
+                    }
+                }
+            }
             
-        } catch (error) {
-            console.error('❌ Error cargando archivos:', error);
-            core?.mostrarToast('❌ Error al cargar archivos: ' + error.message, 'error');
+            if (palabras.length === 0) return '';
+            
+            const esJeroglifico = frase.esJeroglifico || false;
+            const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+            const nivelReal = this._obtenerNivelRealUsuario();
+            
+            let html = '<div style="padding:12px 0;border-top:2px solid var(--bg);margin-top:8px;">';
+            html += '<div style="font-size:12px;font-weight:600;color:var(--gray);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">📖 Palabras desglosadas</div>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+            
+            for (const p of palabras) {
+                try {
+                    let texto = '';
+                    let pinyin = '';
+                    let familia = 'sin_clasificar';
+                    let significado = '';
+                    let tipo = 'sustantivo';
+                    let id = null;
+                    
+                    if (typeof p === 'string') {
+                        texto = p;
+                    } else if (p && typeof p === 'object') {
+                        texto = p.hanzi || p.palabra || '';
+                        pinyin = p.pinyin || '';
+                        familia = p.familia || (p.familias && p.familias[0]) || 'sin_clasificar';
+                        significado = p.significado || '';
+                        tipo = p.tipo || p.familia || 'sustantivo';
+                        id = p.id || null;
+                    }
+                    
+                    if (!texto) continue;
+                    
+                    const color = window.uiCore?._getColorFamilia(familia) || '#6C5CE7';
+                    let transcripcionPalabra = '';
+                    if (!esJeroglifico && texto) {
+                        try {
+                            const transcripcion = await this._obtenerTranscripcionPalabra({ palabra: texto, idioma: idioma, pinyin: pinyin });
+                            if (transcripcion) transcripcionPalabra = transcripcion;
+                        } catch (e) {}
+                    }
+                    
+                    const textoEscapado = texto.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const pinyinEscapado = (pinyin || '').replace(/'/g, "\\'");
+                    const significadoEscapado = (significado || '').replace(/'/g, "\\'");
+                    const familiaEscapada = (familia || 'sin_clasificar').replace(/'/g, "\\'");
+                    
+                    html += `<span style="display:inline-flex;flex-direction:column;align-items:center;padding:6px 14px;border-radius:12px;background:${color}15;border:1px solid ${color}30;cursor:pointer;" 
+                                onclick="window.UIStudy._abrirModalGuardarPalabra('${textoEscapado}', '${pinyinEscapado}', '${significadoEscapado}', '${familiaEscapada}', '${idioma}', '${nivelReal}')"
+                                onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" 
+                                onmouseout="this.style.transform='none';this.style.boxShadow='none'" 
+                                title="Haz clic para guardar en Mi Espacio">`;
+                    html += `<span style="font-weight:${esJeroglifico ? '700' : '600'};color:${color};font-size:${esJeroglifico ? '18px' : '16px'};">${texto}</span>`;
+                    if (esJeroglifico && pinyin) {
+                        html += `<span style="font-size:11px;color:var(--gray-light);letter-spacing:1px;margin-top:1px;">🔊 ${pinyin}</span>`;
+                    } else if (transcripcionPalabra) {
+                        html += `<span style="font-size:10px;color:var(--gray-light);margin-top:1px;">🎤 ${transcripcionPalabra}</span>`;
+                    }
+                    if (significado) {
+                        html += `<span style="font-size:10px;color:var(--gray);margin-top:1px;">📖 ${significado.substring(0, 15)}</span>`;
+                    }
+                    html += `<span style="font-size:8px;color:var(--primary);margin-top:2px;">⭐ Guardar</span>`;
+                    html += '</span>';
+                    
+                } catch (e) {
+                    const texto = typeof p === 'string' ? p : (p?.palabra || p?.hanzi || String(p) || '?');
+                    html += `<span style="display:inline-flex;flex-direction:column;align-items:center;padding:6px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--light);">`;
+                    html += `<span style="font-weight:600;color:var(--dark);font-size:16px;">${texto}</span>`;
+                    html += `<span style="font-size:8px;color:var(--gray-light);">⚠️</span>`;
+                    html += '</span>';
+                }
+            }
+            
+            html += '</div></div>';
+            return html;
         }
-    }
 
-    // ============================================================
-    // RENDERIZAR LISTA DE ARCHIVOS
-    // ============================================================
-
-    _renderizarListaArchivos(archivos) {
-        const container = document.getElementById('listaArchivosTemas');
-        if (!container) return;
+        // ============================================================
+        // FLASHCARD
+        // ============================================================
         
-        if (archivos.length === 0) {
-            container.innerHTML = `
-                <div style="text-align:center;padding:20px 10px;color:rgba(255,255,255,0.3);font-size:12px;grid-column:1/-1;">
-                    <i class="fas fa-info-circle" style="display:block;font-size:22px;margin-bottom:8px;color:rgba(255,255,255,0.15);"></i>
-                    No hay archivos disponibles en data/ para este idioma
-                </div>
-            `;
-            return;
+        _renderFlashcard(frase, modoData) {
+            let html = '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;">';
+            html += '<button class="btn-secondary" onclick="window.UIStudy._toggleFlashcardRespuesta()" style="padding:8px 20px;font-size:13px;">';
+            html += '<i class="fas ' + (this._mostrandoRespuesta ? 'fa-eye-slash' : 'fa-eye') + '"></i> ' + (this._mostrandoRespuesta ? 'Ocultar' : 'Mostrar');
+            html += '</button>';
+            html += '<button class="btn-secondary" onclick="window.UIStudy._generarPista()" style="padding:8px 20px;font-size:13px;">';
+            html += '<i class="fas fa-lightbulb"></i> Pista';
+            html += '</button>';
+            html += '</div>';
+            html += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">';
+            html += '<button class="action-btn danger" onclick="window.UIStudy._responderEstudio(\'fallo\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-times"></i> Fallo</button>';
+            html += '<button class="action-btn warning" onclick="window.UIStudy._responderEstudio(\'duda\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-question"></i> Duda</button>';
+            html += '<button class="action-btn info" onclick="window.UIStudy._responderEstudio(\'parcial\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-minus"></i> Parcial</button>';
+            html += '<button class="action-btn success" onclick="window.UIStudy._responderEstudio(\'correcto\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-check"></i> Correcto</button>';
+            html += '</div>';
+            return html;
         }
+
+        _toggleFlashcardRespuesta() {
+            this._mostrandoRespuesta = !this._mostrandoRespuesta;
+            if (!this._mostrandoRespuesta) this._pistaActual = '';
+            this._renderizarFraseInteractiva();
+            this._guardarIndiceEstudio();
+        }
+
+        // ============================================================
+        // ESCRITURA
+        // ============================================================
         
-        let html = '';
-        for (const archivo of archivos) {
-            const estaSeleccionado = this._archivosSeleccionados.has(archivo.nombre);
-            const nivelIcono = this._NIVEL_ICONOS?.[archivo.nivel] || '📚';
-            const nivelColor = this._NIVEL_COLORES?.[archivo.nivel] || '#6C5CE7';
-            const nombreMostrar = archivo.nombre;
+        _renderEscritura(frase, modoData) {
+            const resultado = this._ultimaRespuesta;
+            const esJeroglifico = modoData.esJeroglifico;
+            const esInverso = modoData.esInverso;
+            
+            let html = '<div style="padding:12px 0;border-top:2px solid var(--bg);border-bottom:2px solid var(--bg);margin-bottom:16px;">';
+            
+            let label;
+            if (esJeroglifico && esInverso) {
+                label = `✍️ Escribe en ${frase.idioma || pipeline.idiomaObjetivo || 'idioma objetivo'} (pinyin aceptado):`;
+            } else if (esJeroglifico && !esInverso) {
+                label = `📝 Escribe la traducción al español:`;
+            } else {
+                label = esInverso ? 
+                    `✍️ Escribe la frase en ${frase.idioma || pipeline.idiomaObjetivo || 'idioma objetivo'}:` :
+                    '📝 Escribe la traducción:';
+            }
+            html += `<label style="font-size:13px;font-weight:600;color:var(--gray);">${label}</label>`;
+            
+            let placeholder;
+            if (esJeroglifico && esInverso) {
+                placeholder = 'Escribe en hanzi o pinyin...';
+            } else if (esJeroglifico && !esInverso) {
+                placeholder = 'Escribe la traducción al español...';
+            } else {
+                placeholder = 'Escribe aquí...';
+            }
+            
+            html += '<div style="display:flex;gap:10px;margin-top:6px;">';
+            html += `<input type="text" id="respuestaEscritura" placeholder="${placeholder}" style="flex:1;padding:10px 14px;border:2px solid var(--light);border-radius:10px;font-size:15px;font-family:var(--font);">`;
+            html += '<button class="btn-primary" id="btnValidarEscritura" style="padding:10px 20px;font-size:14px;width:auto;"><i class="fas fa-check"></i> Validar</button>';
+            html += '</div>';
+            
+            const metodoClase = this._metodoValidacion === 'online' ? 'online' : 'offline';
+            const metodoIcono = this._metodoValidacion === 'online' ? '🧠' : '📝';
+            const metodoTexto = this._metodoValidacion === 'online' ? 'Validación con Groq' : 'Validación offline';
+            const metodoColor = this._metodoValidacion === 'online' ? 'var(--success)' : 'var(--gray)';
             
             html += `
-                <div class="archivo-item" 
-                     style="background:${estaSeleccionado ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)'};border:2px solid ${estaSeleccionado ? 'rgba(85,239,196,0.4)' : 'rgba(255,255,255,0.06)'};border-radius:8px;padding:6px 10px;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;gap:8px;"
-                     onclick="window.UIConfig._toggleSeleccionArchivo('${archivo.nombre}')"
-                     onmouseover="this.style.background='rgba(255,255,255,0.08)'" 
-                     onmouseout="this.style.background='${estaSeleccionado ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.04)'}'">
-                    <input type="checkbox" ${estaSeleccionado ? 'checked' : ''} 
-                           style="width:14px;height:14px;cursor:pointer;accent-color:#00B894;flex-shrink:0;"
-                           onclick="event.stopPropagation();window.UIConfig._toggleSeleccionArchivo('${archivo.nombre}')">
-                    <span style="font-size:14px;">${nivelIcono}</span>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                            ${nombreMostrar}
-                        </div>
-                        <div style="font-size:8px;color:rgba(255,255,255,0.3);">
-                            ${this._getNombreIdioma(archivo.idioma)} · Nivel ${archivo.nivel}
-                            <span style="color:${nivelColor};font-weight:600;">${nivelIcono}</span>
-                        </div>
-                    </div>
-                    ${estaSeleccionado ? '<span style="font-size:11px;color:#55EFC4;">✅</span>' : ''}
-                </div>
-            `;
-        }
-        
-        container.innerHTML = html;
-        this._actualizarContadorSeleccionados();
-    }
-
-    // ============================================================
-    // ALTERNAR SELECCIÓN DE ARCHIVO
-    // ============================================================
-
-    _toggleSeleccionArchivo(nombre) {
-        if (this._archivosSeleccionados.has(nombre)) {
-            this._archivosSeleccionados.delete(nombre);
-        } else {
-            this._archivosSeleccionados.add(nombre);
-        }
-        this._renderizarListaArchivos(this._archivosDisponibles);
-        this._actualizarContadorSeleccionados();
-    }
-
-    // ============================================================
-    // SELECCIONAR TODOS LOS ARCHIVOS
-    // ============================================================
-
-    _seleccionarTodosArchivos() {
-        for (const archivo of this._archivosDisponibles) {
-            this._archivosSeleccionados.add(archivo.nombre);
-        }
-        this._renderizarListaArchivos(this._archivosDisponibles);
-        this._actualizarContadorSeleccionados();
-        const core = this._getCore();
-        core?.mostrarToast(`✅ ${this._archivosSeleccionados.size} archivos seleccionados`, 'success');
-    }
-
-    // ============================================================
-    // DESELECCIONAR TODOS LOS ARCHIVOS
-    // ============================================================
-
-    _deseleccionarTodosArchivos() {
-        this._archivosSeleccionados = new Set();
-        this._renderizarListaArchivos(this._archivosDisponibles);
-        this._actualizarContadorSeleccionados();
-        const core = this._getCore();
-        core?.mostrarToast('🔄 Todos los archivos deseleccionados', 'info');
-    }
-
-    // ============================================================
-    // ACTUALIZAR CONTADOR DE SELECCIONADOS
-    // ============================================================
-
-    _actualizarContadorSeleccionados() {
-        const count = document.getElementById('archivosCount');
-        if (count) {
-            const total = this._archivosDisponibles.length;
-            const seleccionados = this._archivosSeleccionados.size;
-            count.textContent = `${seleccionados}/${total}`;
-        }
-    }
-
-    // ============================================================
-    // IMPORTAR TEMAS SELECCIONADOS - CON RUTA GUARDADA Y XMLHttpRequest PARA APK
-    // ============================================================
-
-    async _importarTemasSeleccionados() {
-        const core = this._getCore();
-        
-        if (this._archivosSeleccionados.size === 0) {
-            core?.mostrarToast('⚠️ Selecciona al menos un archivo para importar', 'warning');
-            return;
-        }
-        
-        if (this._importandoTemasNivel) {
-            core?.mostrarToast('⏳ Ya hay una importación en curso...', 'warning');
-            return;
-        }
-        
-        const archivosSeleccionados = this._archivosDisponibles.filter(
-            a => this._archivosSeleccionados.has(a.nombre)
-        );
-        
-        const confirmar = await core?.confirm(
-            `⚠️ ¿Importar ${archivosSeleccionados.length} archivo(s)?\n\n` +
-            `Archivos seleccionados:\n${archivosSeleccionados.map(a => `  • ${a.nombre} (${this._getNombreIdioma(a.idioma)} - Nivel ${a.nivel})`).join('\n')}\n\n` +
-            `📚 Los temas se importarán como "En Curso"\n` +
-            `🔄 Se sincronizarán automáticamente con el sistema\n` +
-            `💡 Esta acción NO se puede deshacer fácilmente`,
-            '📂 Importar Temas por Niveles'
-        );
-        
-        if (!confirmar) return;
-        
-        this._importandoTemasNivel = true;
-        this._importacionResultados = [];
-        
-        core?.abrirModal('📥 Importando Temas por Niveles...');
-        const textarea = document.getElementById('jsonTextarea');
-        if (textarea) {
-            textarea.value = '';
-            textarea.readOnly = true;
-            textarea.style.minHeight = '200px';
-            textarea.style.fontSize = '12px';
-            textarea.style.fontFamily = 'monospace';
-            textarea.style.background = 'var(--bg)';
-        }
-        
-        const modalContent = document.querySelector('.modal-content');
-        if (modalContent) {
-            const oldInfo = modalContent.querySelector('.importacion-progress-info');
-            if (oldInfo) oldInfo.remove();
-            
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'importacion-progress-info';
-            infoDiv.style.cssText = `
-                background: var(--bg);
-                border-radius: 12px;
-                padding: 20px 24px;
-                margin-bottom: 12px;
-                border-left: 4px solid #00B894;
-                box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-            `;
-            
-            infoDiv.innerHTML = `
-                <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;">
-                    <div id="importacionSpinner" style="font-size:32px;animation:spin 1s linear infinite;color:#00B894;">
-                        <i class="fas fa-spinner"></i>
-                    </div>
-                    <div style="flex:1;">
-                        <div id="importacionModalStatus" style="font-size:15px;font-weight:700;color:var(--dark);">
-                            ⏳ Preparando importación...
-                        </div>
-                        <div id="importacionModalDetalle" style="font-size:12px;color:var(--gray);margin-top:2px;">
-                            Inicializando...
-                        </div>
-                    </div>
-                    <div id="importacionModalPct" style="font-size:18px;font-weight:800;color:#00B894;">
-                        0%
-                    </div>
-                </div>
-                
-                <div style="height:8px;background:var(--light);border-radius:4px;overflow:hidden;position:relative;">
-                    <div id="importacionModalBar" style="height:100%;width:0%;background:linear-gradient(90deg,#00B894,#55EFC4,#00CEC9);border-radius:4px;transition:width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);position:relative;">
-                        <div style="position:absolute;right:0;top:-2px;width:16px;height:12px;background:#55EFC4;border-radius:2px;filter:blur(4px);opacity:0.6;"></div>
-                    </div>
-                </div>
-                
-                <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--gray-light);margin-top:6px;">
-                    <span id="importacionModalCount">0/${archivosSeleccionados.length}</span>
-                    <span id="importacionModalArchivo">Esperando...</span>
+                <div style="display:flex;justify-content:flex-end;margin-top:4px;gap:8px;">
+                    <span class="indicador-validacion ${metodoClase}" style="
+                        display:inline-flex;align-items:center;gap:4px;
+                        font-size:10px;padding:2px 10px;border-radius:12px;
+                        background:${metodoColor}15;border:1px solid ${metodoColor};
+                        color:${metodoColor};
+                    ">
+                        <span class="dot ${metodoClase}" style="width:6px;height:6px;border-radius:50%;display:inline-block;background:${metodoColor};"></span>
+                        ${metodoIcono} ${metodoTexto}
+                    </span>
                 </div>
             `;
             
-            const modalBody = modalContent.querySelector('.modal-body');
-            if (modalBody) {
-                modalBody.insertBefore(infoDiv, modalBody.firstChild);
-            }
-            
-            if (!document.getElementById('importacionStyles')) {
-                const style = document.createElement('style');
-                style.id = 'importacionStyles';
-                style.textContent = `
-                    @keyframes spin {
-                        from { transform: rotate(0deg); }
-                        to { transform: rotate(360deg); }
-                    }
-                    @keyframes pulseGlow {
-                        0%, 100% { opacity: 0.6; }
-                        50% { opacity: 1; }
-                    }
-                    .importacion-success-icon {
-                        animation: pulseGlow 1.5s ease-in-out infinite;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        }
-        
-        let totalImportados = 0;
-        let totalErrores = 0;
-        let totalTemas = 0;
-        let totalHistorias = 0;
-        let totalFrases = 0;
-        
-        for (let i = 0; i < archivosSeleccionados.length; i++) {
-            const archivo = archivosSeleccionados[i];
-            const progreso = Math.round(((i) / archivosSeleccionados.length) * 100);
-            
-            const statusEl = document.getElementById('importacionModalStatus');
-            const detalleEl = document.getElementById('importacionModalDetalle');
-            const barEl = document.getElementById('importacionModalBar');
-            const pctEl = document.getElementById('importacionModalPct');
-            const countEl = document.getElementById('importacionModalCount');
-            const archivoEl = document.getElementById('importacionModalArchivo');
-            const spinnerEl = document.getElementById('importacionSpinner');
-            
-            if (statusEl) statusEl.textContent = `📄 Importando ${archivo.nombre}...`;
-            if (detalleEl) detalleEl.textContent = `${i + 1}/${archivosSeleccionados.length}: ${archivo.nombre}`;
-            if (barEl) barEl.style.width = `${progreso}%`;
-            if (pctEl) {
-                pctEl.textContent = `${progreso}%`;
-                pctEl.style.color = progreso > 50 ? '#00B894' : '#0984E3';
-            }
-            if (countEl) countEl.textContent = `${i + 1}/${archivosSeleccionados.length}`;
-            if (archivoEl) archivoEl.textContent = `📄 ${archivo.nombre}`;
-            if (spinnerEl) spinnerEl.style.color = '#0984E3';
-            
-            if (textarea) {
-                const logLines = [
-                    `📄 ${archivo.nombre}`,
-                    `   🌍 ${this._getNombreIdioma(archivo.idioma)} · Nivel ${archivo.nivel}`,
-                    `   ⏳ Importando...`
-                ];
-                textarea.value += logLines.join('\n') + '\n\n';
-                textarea.scrollTop = textarea.scrollHeight;
-            }
-            
-            try {
-                let contenido = null;
-                let urlUsada = '';
-                
-                // 🔥 INTENTAR CARGAR EL ARCHIVO
-                const rutas = this._rutaEncontrada ? [this._rutaEncontrada] : ['data/', './data/', '../data/', 'assets/data/'];
-                rutas.push('data/'); // fallback
-                
-                for (const ruta of rutas) {
-                    try {
-                        const url = ruta + archivo.nombre;
-                        console.log(`📂 Intentando cargar desde: ${url}`);
-                        
-                        if (this._esModoAPK) {
-                            // En APK usar XMLHttpRequest
-                            const xhr = new XMLHttpRequest();
-                            xhr.open('GET', url, false);
-                            xhr.send();
-                            if (xhr.status === 200 || xhr.status === 0) {
-                                contenido = JSON.parse(xhr.responseText);
-                                urlUsada = url;
-                                console.log(`✅ Archivo cargado desde ${url}`);
-                                break;
-                            }
-                        } else {
-                            // En web usar fetch
-                            const response = await fetch(url);
-                            if (response.ok) {
-                                contenido = await response.json();
-                                urlUsada = url;
-                                console.log(`✅ Archivo cargado desde ${url}`);
-                                break;
-                            }
-                        }
-                    } catch (e) {
-                        // Falló, probar siguiente ruta
-                        console.log(`❌ Falló con ${ruta}:`, e.message);
-                    }
+            if (resultado) {
+                const icono = resultado.correcto ? '✅' : resultado.aproximado ? '🟡' : '❌';
+                const color = resultado.correcto ? 'var(--success)' : resultado.aproximado ? 'var(--warning)' : 'var(--danger)';
+                html += '<div style="padding:12px 16px;border-radius:10px;background:' + color + '10;border-left:4px solid ' + color + ';margin-top:8px;">';
+                html += '<div style="font-size:14px;font-weight:500;">' + icono + ' ' + resultado.mensaje + '</div>';
+                if (!resultado.correcto && !resultado.aproximado) {
+                    html += '<div style="font-size:13px;color:var(--gray);margin-top:4px;">Correcta: <strong>' + resultado.correctaEsperada + '</strong></div>';
                 }
-                
-                if (!contenido) {
-                    throw new Error(`No se pudo cargar el archivo ${archivo.nombre} desde ninguna ruta`);
+                if (resultado.puntuacion !== undefined && resultado.puntuacion > 0) {
+                    html += '<div style="font-size:12px;color:var(--gray);margin-top:2px;">🎯 Puntuación: ' + resultado.puntuacion + '%</div>';
                 }
-                
-                const resultado = await this._importarTemaDesdeArchivo(contenido, archivo);
-                
-                totalImportados++;
-                totalTemas += resultado.temas || 0;
-                totalHistorias += resultado.historias || 0;
-                totalFrases += resultado.frases || 0;
-                
-                this._importacionResultados.push({
-                    archivo: archivo.nombre,
-                    exito: true,
-                    resultado: resultado
-                });
-                
-                if (textarea) {
-                    textarea.value += `   ✅ Importado desde ${urlUsada}: ${resultado.temas} temas, ${resultado.historias} historias, ${resultado.frases} frases\n\n`;
-                    textarea.scrollTop = textarea.scrollHeight;
+                html += '</div>';
+                html += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;">';
+                if (resultado.correcto) {
+                    html += '<button class="action-btn success" onclick="window.UIStudy._responderEstudio(\'correcto\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-check"></i> Correcto</button>';
+                } else if (resultado.aproximado) {
+                    html += '<button class="action-btn info" onclick="window.UIStudy._responderEstudio(\'parcial\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-minus"></i> Parcial</button>';
+                    html += '<button class="action-btn danger" onclick="window.UIStudy._responderEstudio(\'fallo\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-times"></i> Fallo</button>';
+                } else {
+                    html += '<button class="action-btn danger" onclick="window.UIStudy._responderEstudio(\'fallo\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-times"></i> Fallo</button>';
                 }
-                
-                console.log(`✅ Archivo ${archivo.nombre} importado correctamente`);
-                
-            } catch (error) {
-                console.error(`❌ Error importando ${archivo.nombre}:`, error);
-                totalErrores++;
-                this._importacionResultados.push({
-                    archivo: archivo.nombre,
-                    exito: false,
-                    error: error.message
-                });
-                
-                if (textarea) {
-                    textarea.value += `   ❌ Error: ${error.message}\n\n`;
-                    textarea.scrollTop = textarea.scrollHeight;
-                }
-            }
-        }
-        
-        const statusEl = document.getElementById('importacionModalStatus');
-        const barEl = document.getElementById('importacionModalBar');
-        const pctEl = document.getElementById('importacionModalPct');
-        const detalleEl = document.getElementById('importacionModalDetalle');
-        const spinnerEl = document.getElementById('importacionSpinner');
-        const archivoEl = document.getElementById('importacionModalArchivo');
-        
-        if (spinnerEl) {
-            spinnerEl.innerHTML = '<i class="fas fa-check-circle" style="color:#00B894;font-size:32px;animation:none;"></i>';
-            spinnerEl.style.animation = 'none';
-        }
-        
-        if (statusEl) {
-            if (totalErrores === 0) {
-                statusEl.innerHTML = '✅ <span style="color:#00B894;">¡Importación completada con éxito!</span>';
+                html += '</div>';
             } else {
-                statusEl.innerHTML = `⚠️ Importación completada con ${totalErrores} errores`;
+                html += '<div style="font-size:12px;color:var(--gray-light);text-align:center;margin-top:8px;">💡 Escribe tu respuesta y pulsa "Validar"</div>';
+                html += '<div style="display:flex;justify-content:center;margin-top:8px;">';
+                html += '<button class="btn-secondary" onclick="window.UIStudy._generarPista()" style="padding:6px 16px;font-size:12px;"><i class="fas fa-lightbulb"></i> Pista</button>';
+                html += '</div>';
             }
-        }
-        
-        if (barEl) barEl.style.width = '100%';
-        if (barEl) barEl.style.background = 'linear-gradient(90deg,#00B894,#55EFC4)';
-        
-        if (pctEl) {
-            pctEl.textContent = '100%';
-            pctEl.style.color = '#00B894';
-            pctEl.style.fontSize = '24px';
-        }
-        
-        if (detalleEl) {
-            detalleEl.innerHTML = `
-                <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:4px;">
-                    <span style="color:#00B894;">✅ ${totalImportados} importados</span>
-                    ${totalErrores > 0 ? `<span style="color:#FF7675;">❌ ${totalErrores} errores</span>` : ''}
-                    <span style="color:var(--gray);">📚 ${totalTemas} temas</span>
-                    <span style="color:var(--gray);">📖 ${totalHistorias} historias</span>
-                    <span style="color:var(--gray);">📝 ${totalFrases} frases</span>
-                </div>
-            `;
-        }
-        
-        if (archivoEl) archivoEl.textContent = '✅ Completado';
-        
-        if (textarea) {
-            const resumen = `
-╔═══════════════════════════════════════════════════════╗
-║                    ✅ IMPORTACIÓN COMPLETADA           ║
-╠═══════════════════════════════════════════════════════╣
-║                                                       ║
-║  📂 Archivos procesados: ${archivosSeleccionados.length}                            ║
-║  ✅ Importados: ${totalImportados}                                      ║
-║  ${totalErrores > 0 ? `❌ Errores: ${totalErrores}` : '✨ Sin errores'}                                      ║
-║                                                       ║
-║  📊 CONTENIDO IMPORTADO:                              ║
-║  📚 Temas: ${totalTemas}                                           ║
-║  📖 Historias: ${totalHistorias}                                        ║
-║  📝 Frases: ${totalFrases}                                            ║
-║                                                       ║
-║  📌 Todos los temas marcados como "En Curso"         ║
-║  🔄 Módulos actualizados automáticamente              ║
-║                                                       ║
-╚═══════════════════════════════════════════════════════╝
-`;
-            textarea.value += resumen;
-            textarea.scrollTop = textarea.scrollHeight;
-        }
-        
-        await this._recargarConfiguracion();
-        if (window.UITemas) { await window.UITemas._renderTemas(); }
-        if (window.UIDashboard) { window.UIDashboard._cargarDashboardInicial(core); }
-        if (window.UIGrammar) { window.UIGrammar._cargarGramatica(); }
-        
-        core?.mostrarToast(`✅ ${totalImportados} archivos importados correctamente`, 'success');
-        
-        this._importandoTemasNivel = false;
-        this._archivosSeleccionados = new Set();
-        this._renderizarListaArchivos(this._archivosDisponibles);
-        this._actualizarContadorSeleccionados();
-    }
-
-    // ============================================================
-    // IMPORTAR TEMA DESDE ARCHIVO
-    // ============================================================
-
-    async _importarTemaDesdeArchivo(data, archivo) {
-        const core = this._getCore();
-        const idioma = data.meta.idioma || archivo.idioma;
-        const nivel = data.meta.nivel || archivo.nivel;
-        const versionEstandar = data.meta.version_estandar || this._obtenerVersionActiva(idioma);
-        const nombreVersion = data.meta.nombre_version || this._obtenerNombreVersion(idioma, versionEstandar);
-        const esJeroglifico = this._esJeroglifico(idioma);
-        
-        let totalTemas = 0;
-        let totalHistorias = 0;
-        let totalFrases = 0;
-        
-        for (const temaData of (data.temas || [])) {
-            const nuevoTema = {
-                nombre: temaData.nombre,
-                descripcion: temaData.descripcion || '',
-                idioma: idioma,
-                nivel: nivel,
-                icono: temaData.icono || '📁',
-                fechaCreacion: new Date().toISOString(),
-                estado: 'en_curso',
-                historiasIds: [],
-                palabrasClave: [],
-                _esPredefinido: true,
-                _esImportado: true,
-                origen: 'temas_nivel',
-                _version_estandar: versionEstandar,
-                _nombre_version: nombreVersion,
-                _completado: false
-            };
-            
-            const temaId = await db.guardarTema(nuevoTema);
-            if (!temaId) continue;
-            totalTemas++;
-            
-            const historiasIds = [];
-            
-            for (const historiaData of (temaData.historias || [])) {
-                const historiaObj = {
-                    titulo: historiaData.titulo || 'Historia sin título',
-                    temaId: temaId,
-                    idioma: idioma,
-                    nivel: nivel,
-                    fechaCreacion: new Date().toISOString(),
-                    estado: 'en_curso',
-                    frases: (historiaData.frases || []).length,
-                    _version_estandar: versionEstandar,
-                    _nombre_version: nombreVersion,
-                    _esImportada: true,
-                    _importadoDesdeJSON: true,
-                    _completada: false
-                };
-                
-                const historiaId = await db.guardarHistoria(historiaObj);
-                if (!historiaId) continue;
-                historiasIds.push(historiaId);
-                totalHistorias++;
-                
-                for (const fraseData of (historiaData.frases || [])) {
-                    if (!fraseData.original || !fraseData.traduccion) continue;
-                    
-                    const fraseObj = {
-                        original: fraseData.original,
-                        traduccion: fraseData.traduccion,
-                        historiaId: historiaId,
-                        idioma: idioma,
-                        nivel: nivel,
-                        esJeroglifico: esJeroglifico,
-                        pinyinCompleto: fraseData.pinyin || '',
-                        transcripcion: fraseData.transcripcion || '',
-                        segmentacion: fraseData.segmentacion || null,
-                        palabras: [],
-                        rg: 0,
-                        rcn: 0,
-                        activa: true,
-                        reglaGramatical: fraseData.regla_gramatical || null,
-                        explicacionGramatical: fraseData.explicacion_gramatical || null,
-                        tipoRegla: fraseData.tipo_regla || null,
-                        _version_estandar: versionEstandar,
-                        _esImportada: true
-                    };
-                    
-                    for (const pData of (fraseData.palabras || [])) {
-                        const palabraText = pData.palabra || pData.hanzi || '';
-                        if (!palabraText) continue;
-                        
-                        const palabrasExistentes = await db.obtenerPalabrasPorIdioma(idioma);
-                        let palabraExistente = palabrasExistentes.find(p =>
-                            (p.palabra || p.hanzi || '') === palabraText
-                        );
-                        
-                        let palabraId;
-                        if (palabraExistente) {
-                            palabraId = palabraExistente.id;
-                            await db.guardarPalabra({
-                                ...palabraExistente,
-                                frecuencia: (palabraExistente.frecuencia || 0) + 1
-                            });
-                        } else {
-                            const nuevaPalabra = {
-                                palabra: palabraText,
-                                hanzi: esJeroglifico ? palabraText : '',
-                                pinyin: esJeroglifico ? (pData.pinyin || '') : '',
-                                transcripcion: !esJeroglifico ? (pData.transcripcion || '') : '',
-                                significado: pData.significado || palabraText,
-                                familia: pData.tipo || pData.familia || 'sustantivo',
-                                familias: [pData.tipo || pData.familia || 'sustantivo'],
-                                familiaSemantica: pData.familiaSemantica || 'General',
-                                nivel: nivel,
-                                tipo: pData.tipo || 'sustantivo',
-                                idioma: idioma,
-                                frecuencia: 1,
-                                neuroScore: 0.5,
-                                nivelDominio: 'nuevo',
-                                fechaCreacion: Date.now(),
-                                _version_estandar: versionEstandar,
-                                _esImportada: true
-                            };
-                            palabraId = await db.guardarPalabra(nuevaPalabra);
-                        }
-                        
-                        if (palabraId) {
-                            fraseObj.palabras.push({
-                                id: palabraId,
-                                palabra: palabraText,
-                                hanzi: esJeroglifico ? palabraText : '',
-                                pinyin: esJeroglifico ? (pData.pinyin || '') : '',
-                                transcripcion: !esJeroglifico ? (pData.transcripcion || '') : '',
-                                significado: pData.significado || palabraText,
-                                familia: pData.tipo || pData.familia || 'sustantivo'
-                            });
-                        }
-                    }
-                    
-                    await db.guardarFrase(fraseObj);
-                    totalFrases++;
-                }
-            }
-            
-            await db.actualizarTema(temaId, {
-                historiasIds: historiasIds,
-                frases: totalFrases,
-                _tieneContenido: true,
-                estado: 'en_curso',
-                _completado: false
-            });
-        }
-        
-        if (esJeroglifico && data.caracteres_destacados) {
-            for (const item of (data.caracteres_destacados.lista || [])) {
-                const caracter = item.caracter;
-                if (!caracter) continue;
-                
-                const palabrasExistentes = await db.obtenerPalabrasPorIdioma(idioma);
-                const existe = palabrasExistentes.find(p =>
-                    (p.palabra || p.hanzi || '') === caracter && p.esCaracterRaiz === true
-                );
-                
-                if (!existe) {
-                    const raizObj = {
-                        palabra: caracter,
-                        hanzi: caracter,
-                        pinyin: item.pinyin || '',
-                        significado: item.significado || caracter,
-                        familia: 'caracter_raiz',
-                        familias: ['caracter_raiz'],
-                        familiaSemantica: 'Caracteres Raíz',
-                        nivel: nivel,
-                        tipo: 'caracter_raiz',
-                        idioma: idioma,
-                        frecuencia: item.frecuencia || 1,
-                        neuroScore: 0.5,
-                        nivelDominio: 'nuevo',
-                        fechaCreacion: Date.now(),
-                        esCaracterRaiz: true,
-                        tema: 'General',
-                        numero_trazos: 0,
-                        estructura: { trazos_clave: [], radicales: [], tipo_estructura: 'simple' },
-                        mnemotecnia: `🧠 ${caracter} significa "${item.significado}"`,
-                        variantes: null,
-                        esPalabraDerivada: false,
-                        caracterRaiz: null,
-                        desgloseMorfologico: '',
-                        desgloseCaracteres: [],
-                        asociacionVisual: '',
-                        ejemploFrase: (item.frases_de_la_historia || [])[0] || '',
-                        familiaSemanticaPrincipal: 'Caracteres Raíz',
-                        temaFamilia: 'General',
-                        _version_estandar: versionEstandar,
-                        _esImportada: true
-                    };
-                    await db.guardarPalabra(raizObj);
-                }
-            }
-        }
-        
-        return {
-            temas: totalTemas,
-            historias: totalHistorias,
-            frases: totalFrases
-        };
-    }
-
-    // ============================================================
-    // MOSTRAR AYUDA DE IMPORTACIÓN
-    // ============================================================
-
-    _mostrarAyudaImportacion() {
-        const core = this._getCore();
-        const idiomaActivo = gestorIdiomas?.getIdiomaActivo() || 'es';
-        const codigoIso = this._obtenerCodigoIso(idiomaActivo);
-        const nombreIdioma = this._getNombreIdioma(codigoIso);
-        
-        const mensaje = `
-📂 **IMPORTACIÓN DE TEMAS POR NIVELES**
-
----
-
-**📁 ¿Cómo funciona?**
-
-Importa temas predefinidos desde archivos JSON guardados en la carpeta \`data/\`.
-
----
-
-**📄 Formato de archivos (IMPORTANTE)**
-
-Los archivos DEBEN usar el **código ISO** del idioma, NO el nombre:
-
-\`\`\`
-data/CODIGO_NIVEL.json
-\`\`\`
-
-**Ejemplos CORRECTOS:**
-• \`data/zh_A1.json\` → Chino, nivel A1
-• \`data/en_B1.json\` → Inglés, nivel B1
-• \`data/it_A2.json\` → Italiano, nivel A2
-• \`data/es_A1.json\` → Español, nivel A1
-
-**Ejemplos INCORRECTOS:**
-❌ \`data/Chino_A1.json\`
-❌ \`data/Ingles_B1.json\`
-❌ \`data/Italiano_A2.json\`
-
----
-
-**🌍 Códigos ISO de idiomas soportados**
-
-| Código | Idioma |
-|--------|--------|
-| \`zh\`  | Chino |
-| \`en\`  | Inglés |
-| \`es\`  | Español |
-| \`it\`  | Italiano |
-| \`fr\`  | Francés |
-| \`de\`  | Alemán |
-| \`ja\`  | Japonés |
-| \`ko\`  | Coreano |
-| \`pt\`  | Portugués |
-| \`ru\`  | Ruso |
-| \`ar\`  | Árabe |
-| \`hi\`  | Hindi |
-
----
-
-**📊 Niveles soportados**
-
-\`A1\` · \`A2\` · \`B1\` · \`B2\` · \`C1\` · \`C2\`
-
----
-
-**📄 ¿Cómo generar el JSON?**
-
-1. Usa el **Botón Super Power** (arriba) para generar una plantilla completa.
-2. Pide a la IA que complete la plantilla con contenido real.
-3. Guarda el JSON completado en la carpeta \`data/\` con el formato CORRECTO.
-
----
-
-**⚙️ Importación**
-
-1. Haz clic en **"Buscar Archivos"** para ver los archivos disponibles en \`data/\`
-2. Selecciona los archivos que quieres importar
-3. Haz clic en **"Importar Seleccionados"**
-4. Verás el progreso en tiempo real con un modal similar al Super Power
-
----
-
-**📌 Características**
-
-• ✅ Los temas se importan como **"En Curso"** (nunca como completado)
-• ✅ Sincronización automática con los módulos de **Temas**, **Gramática** y **Caracteres**
-• ✅ Soporte para **palabras desglosadas** y **transcripción fonética**
-• ✅ Para idiomas jeroglíficos, se importan automáticamente los **caracteres destacados**
-
----
-
-📌 **Versión:** 24.4
-🔄 **Actualizado:** ${new Date().toLocaleDateString()}`;
-
-        core?.alert(mensaje, '📂 Ayuda: Importación de Temas por Niveles');
-    }
-
-    // ============================================================
-    // GENERAR SUPER JSON - CON INSTRUCCIONES CLARAS PARA DESGLOSE COMPLETO
-    // ============================================================
-
-    async _generarSuperJSON() {
-        if (this._generandoSuperJSON) {
-            this.core?.mostrarToast('⏳ Ya hay una generación en curso...', 'warning');
-            return;
-        }
-        this._generandoSuperJSON = true;
-        const core = this._getCore();
-        try {
-            const idioma = gestorIdiomas?.getIdiomaActivo() || 'es';
-            const nivel = this._obtenerNivelRealUsuario();
-            const esJeroglifico = this._esJeroglifico(idioma);
-            const idiomaNativo = this._obtenerIdiomaNativo();
-            const nombreIdioma = this._getNombreIdioma(idioma);
-            const versionEstandar = this._obtenerVersionActiva(idioma);
-            const nombreVersion = this._obtenerNombreVersion(idioma, versionEstandar);
-            
-            const temasData = this._TEMAS_PREDEFINIDOS[versionEstandar]?.[nivel] || 
-                              this._TEMAS_PREDEFINIDOS[this._VERSION_DEFECTO]?.[nivel] || 
-                              ['Mi familia', 'La casa', 'Comida', 'Rutina diaria', 'La ciudad'];
-            
-            const temas = temasData.map(t => ({
-                id: t.toLowerCase().replace(/\s+/g, '_'),
-                nombre: t,
-                descripcion: `Aprende vocabulario y frases sobre "${t}" en ${nombreIdioma}`,
-                icono: '📁'
-            }));
-            
-            core?.mostrarToast(`🧠 Generando plantilla Super JSON para ${nombreIdioma} (${nivel}) con ${nombreVersion}...`, 'info');
-            const numTemas = temas.length || 8;
-            const numHistorias = numTemas * 3;
-            const numFrases = numHistorias * 6;
-            
-            const plantilla = this._generarPlantillaSuperJSON(idioma, nivel, idiomaNativo, nombreIdioma, esJeroglifico, temas, versionEstandar, nombreVersion);
-            
-            core?.abrirModal(`⚡ Super JSON - ${nombreIdioma} (${nivel}) - ${nombreVersion}`);
-            const textarea = document.getElementById('jsonTextarea');
-            if (textarea) {
-                textarea.value = JSON.stringify(plantilla, null, 2);
-                textarea.readOnly = false;
-                textarea.style.minHeight = '500px';
-                textarea.style.fontSize = '11px';
-                textarea.style.fontFamily = 'monospace';
-                textarea.style.lineHeight = '1.4';
-            }
-            
-            const importBtn = document.getElementById('jsonImport');
-            if (importBtn) {
-                const newImportBtn = importBtn.cloneNode(true);
-                importBtn.parentNode.replaceChild(newImportBtn, importBtn);
-                const self = this;
-                newImportBtn.onclick = async function() {
-                    const jsonText = document.getElementById('jsonTextarea')?.value;
-                    if (!jsonText || jsonText.trim() === '') {
-                        self.core?.mostrarToast('❌ No hay JSON para importar', 'error');
-                        return;
-                    }
-                    try {
-                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Importando...';
-                        this.disabled = true;
-                        const data = JSON.parse(jsonText);
-                        if (data._INSTRUCCIONES_PARA_IA) {
-                            const tieneHistorias = data.historias && data.historias.length > 0 && 
-                                                   data.historias[0].frases && data.historias[0].frases.length > 0;
-                            let tieneDatosReales = false;
-                            if (tieneHistorias) {
-                                const primeraFrase = data.historias[0].frases[0];
-                                if (primeraFrase && primeraFrase.original && 
-                                    !primeraFrase.original.startsWith('Frase') &&
-                                    !primeraFrase.original.startsWith('[')) {
-                                    tieneDatosReales = true;
-                                }
-                            }
-                            if (!tieneDatosReales && data.temas && data.temas.length > 0) {
-                                for (const tema of data.temas) {
-                                    if (tema.historias && tema.historias.length > 0) {
-                                        const primeraHistoria = tema.historias[0];
-                                        if (primeraHistoria.frases && primeraHistoria.frases.length > 0) {
-                                            const primeraFrase = primeraHistoria.frases[0];
-                                            if (primeraFrase.original && 
-                                                !primeraFrase.original.startsWith('Frase') &&
-                                                !primeraFrase.original.startsWith('[')) {
-                                                tieneDatosReales = true;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            if (!tieneDatosReales) {
-                                self.core?.mostrarToast('⚠️ Esto es una PLANTILLA vacía. Pide a la IA que la complete y luego importa.', 'warning');
-                                this.innerHTML = '<i class="fas fa-file-import"></i> Importar';
-                                this.disabled = false;
-                                return;
-                            }
-                            await self._importarSuperJSON(data);
-                            self.core?.cerrarModal();
-                            self.core?.mostrarToast('✅ Super JSON importado correctamente', 'success');
-                            if (window.UITemas) { setTimeout(() => window.UITemas._renderTemas(), 300); }
-                            if (window.UIGrammar) { setTimeout(() => window.UIGrammar._cargarGramatica(), 300); }
-                            if (window.UIDashboard) { window.UIDashboard._cargarDashboardInicial(self.core); }
-                            if (window.UIEspacio) { setTimeout(() => window.UIEspacio._renderizarMiEspacio(), 300); }
-                            if (window.UICaracteres) { setTimeout(() => window.UICaracteres.cargar(self.core), 300); }
-                        } else {
-                            await self._importarSuperJSON(data);
-                            self.core?.cerrarModal();
-                            self.core?.mostrarToast('✅ Super JSON importado correctamente', 'success');
-                            if (window.UITemas) { setTimeout(() => window.UITemas._renderTemas(), 300); }
-                            if (window.UIDashboard) { window.UIDashboard._cargarDashboardInicial(self.core); }
-                        }
-                    } catch (e) {
-                        console.error('❌ Error importando:', e);
-                        self.core?.mostrarToast('❌ Error: ' + e.message, 'error');
-                    } finally {
-                        this.innerHTML = '<i class="fas fa-file-import"></i> Importar';
-                        this.disabled = false;
-                    }
-                };
-            }
-            
-            const copyBtn = document.getElementById('jsonCopy');
-            if (copyBtn) {
-                const newCopyBtn = copyBtn.cloneNode(true);
-                copyBtn.parentNode.replaceChild(newCopyBtn, copyBtn);
-                newCopyBtn.onclick = function() {
-                    const textarea = document.getElementById('jsonTextarea');
-                    if (textarea) {
-                        navigator.clipboard.writeText(textarea.value)
-                            .then(() => self.core?.mostrarToast('📋 Copiado al portapapeles', 'success'))
-                            .catch(() => {
-                                textarea.select();
-                                document.execCommand('copy');
-                                self.core?.mostrarToast('📋 Copiado al portapapeles', 'success');
-                            });
-                    }
-                };
-            }
-            
-            const modalContent = document.querySelector('.modal-content');
-            if (modalContent) {
-                const oldInfo = modalContent.querySelector('.super-json-info');
-                if (oldInfo) oldInfo.remove();
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'super-json-info';
-                infoDiv.style.cssText = `
-                    background: var(--bg);
-                    border-radius: 8px;
-                    padding: 12px 16px;
-                    margin-bottom: 12px;
-                    font-size: 12px;
-                    color: var(--gray);
-                    border-left: 4px solid var(--primary);
-                `;
-                infoDiv.innerHTML = `
-                    <strong>📊 Resumen del Super JSON:</strong><br>
-                    🌍 ${nombreIdioma} (${nivel}) · ${idiomaNativo}<br>
-                    📚 ${numTemas} temas · 📖 ${numHistorias} historias · 📝 ${numFrases} frases
-                    ${esJeroglifico ? ' · 🀄 Incluye caracteres y familias' : ''}
-                    <br>
-                    📌 Versión del estándar: <strong>${nombreVersion}</strong>
-                    <br>
-                    <span style="font-size:11px;color:var(--gray-light);">
-                        💡 <strong>IMPORTANTE:</strong> Esta es una PLANTILLA. Pide a la IA que la complete y luego pulsa "Importar" para cargarla.
-                    </span>
-                    <br>
-                    <span style="font-size:10px;color:var(--success);">
-                        ✅ El JSON completado se importará automáticamente.
-                    </span>
-                    <br>
-                    <span style="font-size:10px;color:var(--secondary);">
-                        🎤 Incluye transcripción fonética para todas las palabras y frases.
-                    </span>
-                    <br>
-                    <span style="font-size:10px;color:var(--warning);">
-                        🔄 Los temas importados se sincronizarán automáticamente con "Temas Predefinidos".
-                    </span>
-                    <br>
-                    <span style="font-size:10px;color:var(--primary);font-weight:600;background:var(--primary)08;padding:2px 10px;border-radius:4px;">
-                        📝 <strong>¡IMPORTANTE!</strong> La IA DEBE generar TODAS las palabras desglosadas para CADA frase.
-                        <br>El array "palabras" de cada frase debe contener TODAS las palabras de la frase,
-                        <br>con sus respectivos campos: palabra, transcripcion/pinyin, familia, tipo, significado.
-                    </span>
-                    <br>
-                    <span style="font-size:10px;color:var(--danger);font-weight:700;background:var(--danger)10;padding:2px 10px;border-radius:4px;margin-top:4px;">
-                        🔥 <strong>¡OBLIGATORIO!</strong> Incluye TODAS las palabras: artículos, preposiciones, conjunciones, verbos, sustantivos, adjetivos, etc.
-                        <br>Si la frase tiene 8 palabras, el array debe tener 8 entradas.
-                    </span>
-                `;
-                const modalBody = modalContent.querySelector('.modal-body');
-                if (modalBody) {
-                    modalBody.insertBefore(infoDiv, modalBody.firstChild);
-                }
-            }
-            
-            core?.mostrarToast(`✅ Plantilla Super JSON generada (${numTemas} temas, ${numHistorias} historias) con ${nombreVersion}`, 'success');
-            
-        } catch (error) {
-            console.error('❌ Error generando Super JSON:', error);
-            core?.mostrarToast('❌ Error: ' + error.message, 'error');
-        } finally {
-            this._generandoSuperJSON = false;
-        }
-    }
-
-    // ============================================================
-    // GENERAR PLANTILLA SUPER JSON - CON INSTRUCCIONES CLARAS
-    // ============================================================
-
-    _generarPlantillaSuperJSON(idioma, nivel, idiomaNativo, nombreIdioma, esJeroglifico, temas, versionEstandar, nombreVersion) {
-        const familiasSemanticas = this._FAMILIAS_SEMANTICAS.join(', ');
-        const numHistoriasPorTema = 3;
-        const numFrasesPorHistoria = 6;
-        const palabrasRequeridas = window.gestorIdiomas?._obtenerPalabrasPorVersion?.(idioma, versionEstandar, nivel) || 2000;
-        const nombreNativo = this._getNombreIdioma(idiomaNativo);
-        const numTemas = temas.length || 8;
-        
-        let instrucciones = [
-            `1. Genera ${numHistoriasPorTema} mini-historias por cada uno de los ${numTemas} temas`,
-            `2. Cada historia debe tener ${numFrasesPorHistoria} frases en ${idioma}`,
-            `3. El nivel de dificultad es ${nivel}`,
-            `4. La versión del estándar es ${nombreVersion} (${versionEstandar})`,
-            `5. Este nivel requiere aproximadamente ${palabrasRequeridas} palabras en total`,
-            `6. Cada frase debe tener: 'original', 'traduccion'`,
-            `7. Incluye 'regla_gramatical' y 'explicacion_gramatical' para cada frase`,
-            `8. Clasifica TODAS las palabras en familias semánticas`,
-            `9. Genera un listado completo de vocabulario por familia semántica`,
-            `10. Genera un listado de reglas gramaticales del nivel ${nivel}`,
-            `11. Genera ejercicios para cada tema`,
-            `12. Genera logros desbloqueables para el nivel`,
-            `13. TODAS las palabras deben tener su tipo gramatical correcto`,
-            `14. Las frases deben ser NATURALES y UTILIZABLES en la vida cotidiana`,
-            `15. El vocabulario debe ser APROPIADO para el nivel ${nivel} y la versión ${nombreVersion}`,
-            `16. 🔥🔥🔥 **OBLIGATORIO:** Para CADA frase, debes generar un array COMPLETO de palabras desglosadas.`,
-            `17. 🔥🔥🔥 El array "palabras" de CADA frase debe contener TODAS LAS PALABRAS de la frase.`,
-            `18. 🔥🔥🔥 CADA palabra del array debe tener: "palabra", "transcripcion" (o "pinyin" para jeroglíficos), "familia", "tipo", "significado".`,
-            `19. 🔥🔥🔥 NO uses placeholders como "[palabra_1]" o "[familia_semantica]". Usa PALABRAS REALES.`,
-            `20. 🔥🔥🔥 La cantidad de palabras en el array "palabras" debe coincidir EXACTAMENTE con el número de palabras de la frase.`,
-            `21. 🔥🔥🔥 INCLUYE TODAS LAS PALABRAS: artículos, preposiciones, conjunciones, verbos, sustantivos, adjetivos, etc.`,
-            `22. 🔥🔥🔥 NO omitas palabras "pequeñas" como "el", "la", "de", "a", "en", "y", "que", etc.`,
-            `23. 🔥🔥🔥 Si la frase tiene 8 palabras, el array debe tener 8 entradas. Si tiene 12, debe tener 12.`,
-            `24. 🔥🔥🔥 La transcripción fonética DEBE estar en el idioma nativo del usuario (${nombreNativo}).`,
-            `25. 🔥🔥🔥 La familia semántica DEBE ser una de las siguientes: ${familiasSemanticas}`,
-            `26. 🔥🔥🔥 **EJEMPLO DE DESGLOSE COMPLETO (¡OBLIGATORIO!):**`,
-            `27. Si la frase en español es: "Yo voy a la tienda" (5 palabras)`,
-            `28. El array "palabras" DEBE tener 5 entradas:`,
-            `29. [`,
-            `30.   { "palabra": "Yo", "transcripcion": "io", "familia": "Pronombres", "tipo": "pronombre", "significado": "yo" },`,
-            `31.   { "palabra": "voy", "transcripcion": "boi", "familia": "Movimiento", "tipo": "verbo", "significado": "ir" },`,
-            `32.   { "palabra": "a", "transcripcion": "a", "familia": "Preposiciones", "tipo": "preposición", "significado": "a" },`,
-            `33.   { "palabra": "la", "transcripcion": "la", "familia": "Artículos", "tipo": "artículo", "significado": "la" },`,
-            `34.   { "palabra": "tienda", "transcripcion": "tienda", "familia": "Comercio", "tipo": "sustantivo", "significado": "tienda" }`,
-            `35. ]`,
-            `36. 🔥 **¡CADA PALABRA DE LA FRASE DEBE ESTAR EN EL ARRAY!**`
-        ];
-
-        if (esJeroglifico) {
-            instrucciones.push(
-                `37. ⚠️ IMPORTANTE: Para CADA frase, proporciona 'pinyin' CON TONOS (ej: "nǐ hǎo")`,
-                `38. La 'segmentacion' debe separar CADA palabra con significado semántico (ej: "我 爱 你")`,
-                `39. En 'palabras', cada entrada debe tener 'hanzi' y 'pinyin' con tonos (ej: "wǒ", "ài", "nǐ")`,
-                `40. El pinyin DEBE incluir los números de tono (ma1, ma2, ma3, ma4) o diacríticos (mā, má, mǎ, mà)`,
-                `41. Las palabras DEBEN tener su pinyin correspondiente para poder ser estudiadas correctamente`,
-                `42. ⚠️ IMPORTANTE: Genera una sección 'caracteres_destacados' con los caracteres clave del tema`,
-                `43. 🔥 Para CADA palabra en el array "palabras", incluye "hanzi" Y "pinyin".`,
-                `44. 🔥 **EJEMPLO PARA JEROGLÍFICOS:** Si la frase es "我爱你" (3 palabras)`,
-                `45. El array DEBE tener 3 entradas:`,
-                `46. [`,
-                `47.   { "hanzi": "我", "pinyin": "wǒ", "familia": "Pronombres", "tipo": "pronombre", "significado": "yo" },`,
-                `48.   { "hanzi": "爱", "pinyin": "ài", "familia": "Sentimientos", "tipo": "verbo", "significado": "amar" },`,
-                `49.   { "hanzi": "你", "pinyin": "nǐ", "familia": "Pronombres", "tipo": "pronombre", "significado": "tú" }`,
-                `50. ]`
-            );
-        } else {
-            instrucciones.push(
-                `37. ⚠️ IMPORTANTE: Para CADA frase, proporciona 'transcripcion' (transcripción fonética)`,
-                `38. La 'transcripcion' debe estar en el sistema fonético NATIVO del usuario (${nombreNativo})`,
-                `39. En 'palabras', cada entrada debe tener 'transcripcion' en ${nombreNativo}`,
-                `40. La transcripción debe ser FÁCIL DE LEER para un hablante nativo de ${nombreNativo}`,
-                `41. Separa las sílabas con espacios para facilitar la lectura (ej: "ai jaf a pensil")`,
-                `42. Usa la aproximación más cercana para sonidos que no existen en ${nombreNativo}`,
-                `43. 🔥 Para CADA palabra en el array "palabras", incluye "palabra" Y "transcripcion".`
-            );
+            html += '</div>';
+            return html;
         }
 
-        const plantilla = {
-            "_INSTRUCCIONES_PARA_IA": {
-                "version": "24.4",
-                "accion": `Genera un curso COMPLETO y PROFESIONAL de nivel ${nivel} para ${nombreIdioma}`,
-                "idioma_objetivo": idioma,
-                "nombre_idioma": nombreIdioma,
-                "nivel": nivel,
-                "idioma_nativo": idiomaNativo,
-                "es_jeroglifico": esJeroglifico,
-                "num_temas": numTemas,
-                "num_historias_por_tema": numHistoriasPorTema,
-                "num_frases_por_historia": numFrasesPorHistoria,
-                "temas": temas.map(t => t.nombre),
-                "version_estandar": versionEstandar,
-                "nombre_version": nombreVersion,
-                "palabras_requeridas": palabrasRequeridas,
-                "num_temas_recomendados": numTemas,
-                "instrucciones": instrucciones,
-                "familias_semanticas_disponibles": this._FAMILIAS_SEMANTICAS,
-                "niveles_disponibles": this._NIVELES,
-                "formato_palabras": esJeroglifico ? {
-                    "hanzi": "El carácter en el idioma objetivo (ej: 我)",
-                    "pinyin": "Pronunciación con tonos (ej: wǒ)",
-                    "familia": "Familia SEMÁNTICA",
-                    "tipo": "Categoría GRAMATICAL",
-                    "significado": `Traducción al ${idiomaNativo}`
-                } : {
-                    "palabra": "La palabra en el idioma objetivo",
-                    "transcripcion": `Transcripción fonética en ${nombreNativo} (ej: "ai" para "I")`,
-                    "familia": "Familia SEMÁNTICA",
-                    "tipo": "Categoría GRAMATICAL",
-                    "significado": `Traducción al ${idiomaNativo}`
-                },
-                "campos_gramaticales": {
-                    "regla_gramatical": "Nombre de la regla gramatical (ej: Pretérito Perfecto)",
-                    "explicacion_gramatical": `Explicación detallada en ${idiomaNativo} adaptada al nivel`,
-                    "tipo_regla": "Categoría: tiempo_verbal, estructura_oracional, concordancia, uso_preposicional, etc."
-                },
-                "campos_transcripcion": esJeroglifico ? {
-                    "frase": "pinyin con tonos",
-                    "palabra": "pinyin con tonos",
-                    "segmentacion": "hanzi y pinyin separados"
-                } : {
-                    "frase": `transcripcion en ${nombreNativo}`,
-                    "palabra": `transcripcion en ${nombreNativo}`
-                }
-            },
-            "meta": {
-                "idioma": idioma,
-                "nivel": nivel,
-                "idioma_nativo": idiomaNativo,
-                "es_jeroglifico": esJeroglifico,
-                "num_temas": numTemas,
-                "num_historias_total": numTemas * numHistoriasPorTema,
-                "num_frases_total": numTemas * numHistoriasPorTema * numFrasesPorHistoria,
-                "version_estandar": versionEstandar,
-                "nombre_version": nombreVersion,
-                "palabras_requeridas": palabrasRequeridas,
-                "fecha_generacion": new Date().toISOString(),
-                "version": "24.4",
-                "generado_por": "Pipeline Neuro - Super Power",
-                "_completado": false
-            },
-            "temas": temas.map(tema => ({
-                "id": tema.id,
-                "nombre": tema.nombre,
-                "descripcion": tema.descripcion,
-                "icono": tema.icono,
-                "historias": []
-            })),
-            "vocabulario": {
-                "total_palabras": 0,
-                "por_familia_semantica": {},
-                "por_nivel": {},
-                "lista_completa": []
-            },
-            "reglas_gramaticales": [],
-            "ejercicios": [],
-            "logros": [],
-            ...(esJeroglifico ? {
-                "caracteres_clave": [],
-                "familias_caracteres": [],
-                "estudios_completos": []
-            } : {})
-        };
+        // ============================================================
+        // ENLAZAR EVENTOS DE ESCRITURA
+        // ============================================================
 
-        for (const tema of plantilla.temas) {
-            for (let h = 1; h <= numHistoriasPorTema; h++) {
-                const historia = {
-                    "titulo": `Historia ${h} sobre ${tema.nombre} (cámbialo por uno creativo)`,
-                    "frases": []
-                };
-                for (let f = 1; f <= numFrasesPorHistoria; f++) {
-                    // 🔥 GENERAR 5-8 PALABRAS DE EJEMPLO (para que la IA vea que debe ser TODAS)
-                    const numPalabrasEjemplo = 5 + Math.floor(Math.random() * 4);
-                    
-                    const frase = {
-                        "original": `[Frase ${f} en ${idioma} sobre ${tema.nombre}]`,
-                        "traduccion": `[Traducción al ${idiomaNativo} de la frase ${f}]`,
-                        "regla_gramatical": `[Regla gramatical ${f}]`,
-                        "explicacion_gramatical": `[Explicación de la regla ${f} en ${idiomaNativo}, nivel ${nivel}]`,
-                        "tipo_regla": `[tiempo_verbal, estructura_oracional, concordancia, uso_preposicional, etc.]`,
-                        "palabras": []
-                    };
-
-                    if (esJeroglifico) {
-                        frase.pinyin = `[pinyin_con_tonos_frase_${f}]`;
-                        frase.segmentacion = {
-                            "hanzi": `[hanzi_frase_${f}]`,
-                            "pinyin": `[pinyin_frase_${f}]`
-                        };
-                        for (let p = 1; p <= numPalabrasEjemplo; p++) {
-                            frase.palabras.push({
-                                "hanzi": `[hanzi_palabra_${f}_${p}]`,
-                                "pinyin": `[pinyin_palabra_${f}_${p}]`,
-                                "familia": `[familia_semantica_${p}]`,
-                                "tipo": `[tipo_gramatical_${p}]`,
-                                "significado": `[significado_en_${idiomaNativo}_${p}]`
-                            });
-                        }
-                    } else {
-                        frase.transcripcion = `[transcripcion_en_${idiomaNativo}_de_la_frase_${f}]`;
-                        for (let p = 1; p <= numPalabrasEjemplo; p++) {
-                            frase.palabras.push({
-                                "palabra": `[palabra_${f}_${p}]`,
-                                "transcripcion": `[transcripcion_en_${idiomaNativo}_de_${f}_${p}]`,
-                                "familia": `[familia_semantica_${p}]`,
-                                "tipo": `[tipo_gramatical_${p}]`,
-                                "significado": `[significado_en_${idiomaNativo}_${p}]`
-                            });
-                        }
-                    }
-                    
-                    // 🔥 AVISO MUY CLARO SOBRE EL DESGLOSE COMPLETO
-                    frase._AVISO_OBLIGATORIO = `
-⚠️⚠️⚠️ ¡ATENCIÓN IA! ⚠️⚠️⚠️
-
-Este array "palabras" debe contener TODAS las palabras de la frase original.
-NO uses placeholders como "[palabra_1]" o "[familia_semantica]".
-USA PALABRAS REALES del idioma ${idioma}.
-
-Si la frase tiene 6 palabras, el array debe tener 6 entradas.
-Si tiene 8 palabras, 8 entradas.
-INCLUYE TODAS: artículos, preposiciones, conjunciones, verbos, sustantivos, etc.
-
-🔥 Ejemplo CORRECTO para "I have a pencil" (inglés → español):
-"palabras": [
-    { "palabra": "I", "transcripcion": "ai", "familia": "Pronombres", "tipo": "pronombre", "significado": "yo" },
-    { "palabra": "have", "transcripcion": "jaf", "familia": "Posesión", "tipo": "verbo", "significado": "tener" },
-    { "palabra": "a", "transcripcion": "a", "familia": "Artículos", "tipo": "artículo", "significado": "un/una" },
-    { "palabra": "pencil", "transcripcion": "pensil", "familia": "Objetos", "tipo": "sustantivo", "significado": "lápiz" }
-]
-
-🔥 ¡CADA PALABRA DE LA FRASE DEBE ESTAR EN EL ARRAY! 🔥
-`;
-                    
-                    historia.frases.push(frase);
-                }
-                tema.historias.push(historia);
-            }
-        }
-
-        for (const familia of this._FAMILIAS_SEMANTICAS) {
-            plantilla.vocabulario.por_familia_semantica[familia] = [];
-        }
-
-        const tiposReglas = ['tiempo_verbal', 'estructura_oracional', 'concordancia', 'uso_preposicional', 'articulos', 'pronombres'];
-        for (let i = 1; i <= 10; i++) {
-            plantilla.reglas_gramaticales.push({
-                "nombre": `[Regla gramatical ${i} del nivel ${nivel}]`,
-                "explicacion": `[Explicación detallada de la regla ${i} en ${idiomaNativo}]`,
-                "ejemplos": [`[Ejemplo 1 de la regla ${i}]`, `[Ejemplo 2 de la regla ${i}]`],
-                "categoria": tiposReglas[i % tiposReglas.length],
-                "nivel": nivel
-            });
-        }
-
-        const tiposEjercicios = ['completar', 'ordenar', 'asociacion', 'traduccion', 'multiple'];
-        for (const tema of temas) {
-            const tipo = tiposEjercicios[Math.floor(Math.random() * tiposEjercicios.length)];
-            plantilla.ejercicios.push({
-                "tema": tema.nombre,
-                "tipo": tipo,
-                "pregunta": `[Ejercicio de ${tipo} sobre ${tema.nombre}]`,
-                "respuesta": `[Respuesta correcta]`,
-                "pista": `[Pista para el ejercicio]`,
-                "nivel": nivel
-            });
-        }
-
-        const logrosTemas = temas.slice(0, 5).map(t => ({
-            "nombre": `Explorador de ${t.nombre}`,
-            "descripcion": `Aprende 10 palabras relacionadas con ${t.nombre}`,
-            "icono": t.icono || '🌟'
-        }));
-        plantilla.logros = [
-            ...logrosTemas,
-            {
-                "nombre": `Maestro del nivel ${nivel}`,
-                "descripcion": `Completa todas las actividades del nivel ${nivel}`,
-                "icono": "🏆"
-            },
-            {
-                "nombre": `Vocabulario avanzado ${nivel}`,
-                "descripcion": `Aprende 50 palabras del nivel ${nivel}`,
-                "icono": "📚"
-            }
-        ];
-
-        if (esJeroglifico) {
-            const caracteresEjemplo = ['家', '人', '有', '是', '我', '你', '他', '她', '们', '的'];
-            for (let i = 0; i < Math.min(10, caracteresEjemplo.length); i++) {
-                const c = caracteresEjemplo[i];
-                plantilla.caracteres_clave.push({
-                    "simbolo": c,
-                    "pinyin": `[pinyin_de_${c}]`,
-                    "significado": `[significado_de_${c}_en_${idiomaNativo}]`,
-                    "trazos": Math.floor(Math.random() * 8) + 3,
-                    "radical": `[radical_de_${c}]`,
-                    "mnemotecnia": `[mnemotecnia_para_${c}]`,
-                    "palabras_derivadas": [`[palabra_derivada_1_de_${c}]`, `[palabra_derivada_2_de_${c}]`],
-                    "frases_ejemplo": [`[frase_ejemplo_1_con_${c}]`, `[frase_ejemplo_2_con_${c}]`],
-                    "nivel": nivel
-                });
-            }
-        }
-
-        plantilla._AVISO_IMPORTANTE_PALABRAS_DESGLOSADAS = `
-🔥🔥🔥 ¡ATENCIÓN IA! 🔥🔥🔥
-
-Este JSON contiene TODOS los campos necesarios para un curso completo.
-
-⚠️ **OBLIGATORIO:** Para CADA frase, el array "palabras" debe contener TODAS las palabras de la frase.
-
-❌ NO uses placeholders como "[palabra_1]" o "[familia_semantica]".
-✅ Usa PALABRAS REALES del idioma ${idioma}.
-
-📝 Ejemplo CORRECTO para una frase en español (5 palabras → 5 entradas):
-"palabras": [
-    { "palabra": "Yo", "transcripcion": "io", "familia": "Pronombres", "tipo": "pronombre", "significado": "yo" },
-    { "palabra": "voy", "transcripcion": "boi", "familia": "Movimiento", "tipo": "verbo", "significado": "ir" },
-    { "palabra": "a", "transcripcion": "a", "familia": "Preposiciones", "tipo": "preposición", "significado": "a" },
-    { "palabra": "la", "transcripcion": "la", "familia": "Artículos", "tipo": "artículo", "significado": "la" },
-    { "palabra": "tienda", "transcripcion": "tienda", "familia": "Comercio", "tipo": "sustantivo", "significado": "tienda" }
-]
-
-📝 Ejemplo CORRECTO para una frase en chino (3 palabras → 3 entradas):
-"palabras": [
-    { "hanzi": "我", "pinyin": "wǒ", "familia": "Pronombres", "tipo": "pronombre", "significado": "yo" },
-    { "hanzi": "爱", "pinyin": "ài", "familia": "Sentimientos", "tipo": "verbo", "significado": "amar" },
-    { "hanzi": "你", "pinyin": "nǐ", "familia": "Pronombres", "tipo": "pronombre", "significado": "tú" }
-]
-
-🔴 **¡NUNCA OMITAS PALABRAS!** Incluye artículos, preposiciones, conjunciones, etc.
-🔴 **¡CADA PALABRA DE LA FRASE DEBE ESTAR EN EL ARRAY!**
-🔴 **¡EL NÚMERO DE ENTRADAS DEBE COINCIDIR CON EL NÚMERO DE PALABRAS DE LA FRASE!**
-
-🔥 NO OLVIDES: Cuantas más palabras desglosadas proporciones, más útil será el contenido para el estudiante.
-`;
-
-        return plantilla;
-    }
-
-    // ============================================================
-    // IMPORTAR SUPER JSON - FORZADO A "EN CURSO"
-    // ============================================================
-
-    async _importarSuperJSON(data) {
-        if (!data) throw new Error('No hay datos para importar');
-        let datosReales = data;
-        if (data._INSTRUCCIONES_PARA_IA) {
-            const tieneHistorias = data.historias && data.historias.length > 0 &&
-                                   data.historias[0].frases && data.historias[0].frases.length > 0;
-            const tieneTemas = data.temas && data.temas.length > 0 &&
-                               data.temas.some(tema => tema.historias && tema.historias.length > 0);
-            let tieneDatosReales = false;
-            if (tieneHistorias) {
-                const primeraFrase = data.historias[0].frases[0];
-                if (primeraFrase && primeraFrase.original &&
-                    !primeraFrase.original.startsWith('Frase') &&
-                    !primeraFrase.original.startsWith('[')) {
-                    tieneDatosReales = true;
-                }
-            } else if (tieneTemas) {
-                tieneDatosReales = true;
-            }
-            if (!tieneDatosReales) {
-                this.core?.mostrarToast('⚠️ Esto es una PLANTILLA vacía. Pide a la IA que la complete y luego importa.', 'warning');
+        _enlazarEventosEscritura() {
+            if (this._eventosEnlazados) return;
+            if (this._enlaceIntentos > this._maxEnlaceIntentos) {
+                console.warn('⚠️ Máximo de intentos alcanzado para enlazar eventos de escritura');
                 return;
             }
-            datosReales = data;
-        }
-        if (!datosReales.meta || !datosReales.temas || !Array.isArray(datosReales.temas)) {
-            throw new Error('JSON inválido: debe contener "meta" y "temas"');
-        }
-        if (datosReales.temas.length === 0) throw new Error('JSON inválido: no hay temas');
-        const core = this._getCore();
-        const idioma = datosReales.meta.idioma || gestorIdiomas?.getIdiomaActivo() || 'es';
-        const nivel = datosReales.meta.nivel || this._obtenerNivelRealUsuario();
-        const esJeroglifico = datosReales.meta.es_jeroglifico || this._esJeroglifico(idioma);
-        const versionEstandar = datosReales.meta.version_estandar || 'v3.0';
-        const nombreVersion = datosReales.meta.nombre_version || 'HSK 3.0';
-        
-        // 🔥 FORZAR A "EN CURSO" - NUNCA IMPORTAR COMO COMPLETADO
-        const completado = false;
-        const estadoInicial = 'en_curso';
-        
-        core?.mostrarToast(`🧠 Importando Super JSON para ${idioma} (${nivel}) con ${nombreVersion}...`, 'info');
-        let totalTemas = 0, totalHistorias = 0, totalFrases = 0, totalPalabras = 0, totalReglas = 0, totalCaracteres = 0;
-        let totalPalabrasDesglosadas = 0;
-        
-        for (const temaData of datosReales.temas) {
-            const temasExistentes = await db.obtenerTemasPorIdioma(idioma);
-            let temaExistente = temasExistentes.find(t => 
-                t.nombre === temaData.nombre && 
-                (t._esPredefinido === true || t.origen === 'super_json')
-            );
-            let temaId;
-            if (temaExistente) {
-                temaId = temaExistente.id;
-                if (temaExistente.estado === 'completado' || temaExistente._completado === true) {
-                    temaExistente.estado = estadoInicial;
-                    temaExistente._completado = completado;
-                    delete temaExistente._fechaCompletado;
-                    await db.update('temas', temaExistente);
-                    console.log(`🔄 Tema "${temaExistente.nombre}" reabierto a "En Curso"`);
-                }
-            } else {
-                const nuevoTema = {
-                    nombre: temaData.nombre,
-                    descripcion: temaData.descripcion || '',
-                    idioma: idioma,
-                    nivel: nivel,
-                    icono: temaData.icono || '📁',
-                    fechaCreacion: new Date().toISOString(),
-                    estado: estadoInicial,
-                    historiasIds: [],
-                    palabrasClave: [],
-                    _esPredefinido: true,
-                    _esImportado: true,
-                    origen: 'super_json',
-                    _version_estandar: versionEstandar,
-                    _nombre_version: nombreVersion,
-                    _completado: completado
-                };
-                temaId = await db.guardarTema(nuevoTema);
-                totalTemas++;
-            }
             
-            if (temaExistente && temaExistente._temaOriginalId) {
-                await window.UITemas._marcarTemaCompletado(
-                    idioma,
-                    temaExistente._temaOriginalId,
-                    completado
-                );
-            }
-            
-            const historias = temaData.historias || [];
-            const historiasIds = [];
-            for (const historiaData of historias) {
-                const historiaObj = {
-                    titulo: historiaData.titulo || 'Historia sin título',
-                    temaId: temaId,
-                    idioma: idioma,
-                    nivel: nivel,
-                    fechaCreacion: new Date().toISOString(),
-                    estado: estadoInicial,
-                    frases: historiaData.frases ? historiaData.frases.length : 0,
-                    _version_estandar: versionEstandar,
-                    _nombre_version: nombreVersion,
-                    _completada: completado
-                };
-                const historiaId = await db.guardarHistoria(historiaObj);
-                if (historiaId) {
-                    historiasIds.push(historiaId);
-                    totalHistorias++;
-                    const frases = historiaData.frases || [];
-                    for (const fraseData of frases) {
-                        if (!fraseData.original || !fraseData.traduccion) continue;
-                        
-                        const palabrasDesglosadas = [];
-                        const palabrasData = fraseData.palabras || [];
-                        
-                        for (const pData of palabrasData) {
-                            const palabraText = pData.palabra || pData.hanzi || '';
-                            if (!palabraText) continue;
-                            
-                            const tipoGramatical = pData.tipo || pData.familia || 'sustantivo';
-                            const familiaSemantica = pData.familia_semantica || 'General';
-                            const pinyinPalabra = pData.pinyin || '';
-                            const transcripcionPalabra = pData.transcripcion || '';
-                            
-                            const palabrasExistentes = await db.obtenerPalabrasPorIdioma(idioma);
-                            let palabraExistente = palabrasExistentes.find(p =>
-                                (p.palabra || p.hanzi || '').toLowerCase() === palabraText.toLowerCase()
-                            );
-                            
-                            let palabraId;
-                            if (palabraExistente) {
-                                palabraId = palabraExistente.id;
-                                const updateData = {
-                                    ...palabraExistente,
-                                    frecuencia: (palabraExistente.frecuencia || 0) + 1,
-                                    pinyin: esJeroglifico ? (palabraExistente.pinyin || pinyinPalabra) : palabraExistente.pinyin,
-                                    transcripcion: !esJeroglifico ? (palabraExistente.transcripcion || transcripcionPalabra) : '',
-                                    _version_estandar: versionEstandar
-                                };
-                                await db.guardarPalabra(updateData);
-                            } else {
-                                const nuevaPalabra = {
-                                    palabra: palabraText,
-                                    hanzi: esJeroglifico ? palabraText : '',
-                                    pinyin: esJeroglifico ? pinyinPalabra : '',
-                                    transcripcion: !esJeroglifico ? transcripcionPalabra : '',
-                                    significado: pData.significado || palabraText,
-                                    familia: tipoGramatical,
-                                    familias: [tipoGramatical],
-                                    familiaSemantica: familiaSemantica,
-                                    nivel: nivel,
-                                    tipo: tipoGramatical,
-                                    idioma: idioma,
-                                    frecuencia: 1,
-                                    neuroScore: 0.5,
-                                    nivelDominio: 'nuevo',
-                                    fechaCreacion: Date.now(),
-                                    _version_estandar: versionEstandar
-                                };
-                                palabraId = await db.guardarPalabra(nuevaPalabra);
-                                totalPalabras++;
-                            }
-                            
-                            if (palabraId) {
-                                if (window.gestorFavoritos) {
-                                    try {
-                                        await window.gestorFavoritos.añadirPalabra(palabraId);
-                                        await window.gestorFavoritos.añadirPalabraAGrupo(palabraId, `📚 Nivel ${nivel}`);
-                                        await window.gestorFavoritos.añadirPalabraAGrupo(palabraId, `📂 ${familiaSemantica}`);
-                                    } catch (e) {}
-                                }
-                                palabrasDesglosadas.push({
-                                    id: palabraId,
-                                    palabra: palabraText,
-                                    hanzi: esJeroglifico ? palabraText : '',
-                                    pinyin: esJeroglifico ? pinyinPalabra : '',
-                                    transcripcion: !esJeroglifico ? transcripcionPalabra : '',
-                                    significado: pData.significado || palabraText,
-                                    familia: tipoGramatical,
-                                    tipo: tipoGramatical,
-                                    familiaSemantica: familiaSemantica
-                                });
-                                totalPalabrasDesglosadas++;
-                            }
-                        }
-                        
-                        const fraseObj = {
-                            original: fraseData.original,
-                            traduccion: fraseData.traduccion,
-                            historiaId: historiaId,
-                            idioma: idioma,
-                            nivel: nivel,
-                            esJeroglifico: esJeroglifico,
-                            pinyinCompleto: esJeroglifico ? (fraseData.pinyin || '') : '',
-                            transcripcion: !esJeroglifico ? (fraseData.transcripcion || '') : '',
-                            segmentacion: esJeroglifico && fraseData.segmentacion ? {
-                                hanzi: fraseData.segmentacion.hanzi || fraseData.original,
-                                pinyin: fraseData.segmentacion.pinyin || fraseData.pinyin || ''
-                            } : null,
-                            palabras: palabrasDesglosadas,
-                            rg: 0,
-                            rcn: 0,
-                            activa: true,
-                            reglaGramatical: fraseData.regla_gramatical || null,
-                            explicacionGramatical: fraseData.explicacion_gramatical || null,
-                            tipoRegla: fraseData.tipo_regla || null,
-                            familiaSemantica: 'Seleccionadas por Usuario',
-                            _version_estandar: versionEstandar,
-                            _completada: completado
-                        };
-                        
-                        await db.guardarFrase(fraseObj);
-                        totalFrases++;
-                        
-                        if (fraseData.regla_gramatical && fraseData.explicacion_gramatical) {
-                            const reglaObj = {
-                                idioma: idioma,
-                                nivel: nivel,
-                                tipo: fraseData.tipo_regla || 'general',
-                                regla: fraseData.regla_gramatical,
-                                explicacion: fraseData.explicacion_gramatical,
-                                ejemplos: [fraseData.original],
-                                frecuencia: 1,
-                                fechaCreacion: Date.now(),
-                                ultimoUso: Date.now(),
-                                _version_estandar: versionEstandar
-                            };
-                            await db.guardarReglaGramatical(reglaObj);
-                            totalReglas++;
-                        }
-                    }
-                    await db.update('historias', { ...historiaObj, id: historiaId, frases: frases.length });
-                }
-            }
-            const temaActual = await db.obtenerTema(temaId);
-            if (temaActual) {
-                const todasHistoriasIds = [...new Set([...temaActual.historiasIds, ...historiasIds])];
-                await db.actualizarTema(temaId, {
-                    historiasIds: todasHistoriasIds,
-                    frases: (temaActual.frases || 0) + totalFrases,
-                    estado: estadoInicial,
-                    _version_estandar: versionEstandar,
-                    _nombre_version: nombreVersion,
-                    _completado: completado,
-                    _totalPalabrasDesglosadas: (temaActual._totalPalabrasDesglosadas || 0) + totalPalabrasDesglosadas
-                });
-            }
-        }
-        
-        if (datosReales.vocabulario && datosReales.vocabulario.lista_completa) {
-            for (const p of datosReales.vocabulario.lista_completa) {
-                const palabraText = p.palabra || p.hanzi || '';
-                if (!palabraText) continue;
-                const palabrasExistentes = await db.obtenerPalabrasPorIdioma(idioma);
-                const existe = palabrasExistentes.find(w =>
-                    (w.palabra || w.hanzi || '').toLowerCase() === palabraText.toLowerCase()
-                );
-                if (!existe) {
-                    const nuevaPalabra = {
-                        palabra: palabraText,
-                        hanzi: esJeroglifico ? palabraText : '',
-                        pinyin: esJeroglifico ? (p.pinyin || '') : '',
-                        transcripcion: !esJeroglifico ? (p.transcripcion || '') : '',
-                        significado: p.significado || palabraText,
-                        familia: p.tipo || p.familia || 'sustantivo',
-                        familias: [p.tipo || p.familia || 'sustantivo'],
-                        familiaSemantica: p.familia_semantica || 'General',
-                        nivel: nivel,
-                        tipo: p.tipo || 'sustantivo',
-                        idioma: idioma,
-                        frecuencia: 1,
-                        neuroScore: 0.5,
-                        nivelDominio: 'nuevo',
-                        fechaCreacion: Date.now(),
-                        _version_estandar: versionEstandar
-                    };
-                    await db.guardarPalabra(nuevaPalabra);
-                    totalPalabras++;
-                }
-            }
-        }
-        
-        if (datosReales.reglas_gramaticales) {
-            for (const regla of datosReales.reglas_gramaticales) {
-                if (!regla.nombre || !regla.explicacion) continue;
-                const reglaObj = {
-                    idioma: idioma,
-                    nivel: nivel,
-                    tipo: regla.categoria || 'general',
-                    regla: regla.nombre,
-                    explicacion: regla.explicacion,
-                    ejemplos: regla.ejemplos || [],
-                    frecuencia: 1,
-                    fechaCreacion: Date.now(),
-                    ultimoUso: Date.now(),
-                    _version_estandar: versionEstandar
-                };
-                await db.guardarReglaGramatical(reglaObj);
-                totalReglas++;
-            }
-        }
-        
-        if (esJeroglifico && datosReales.caracteres_clave) {
-            for (const c of datosReales.caracteres_clave) {
-                const simbolo = c.simbolo || '';
-                if (!simbolo) continue;
-                const palabrasExistentes = await db.obtenerPalabrasPorIdioma(idioma);
-                const existe = palabrasExistentes.find(p =>
-                    (p.palabra || p.hanzi || '').toLowerCase() === simbolo.toLowerCase() && p.esCaracterRaiz === true
-                );
-                if (!existe) {
-                    const raizObj = {
-                        palabra: simbolo,
-                        hanzi: simbolo,
-                        pinyin: c.pinyin || '',
-                        significado: c.significado || simbolo,
-                        familia: 'caracter_raiz',
-                        familias: ['caracter_raiz'],
-                        familiaSemantica: 'Caracteres Raíz',
-                        nivel: nivel,
-                        tipo: 'caracter_raiz',
-                        idioma: idioma,
-                        frecuencia: 1,
-                        neuroScore: 0.5,
-                        nivelDominio: 'nuevo',
-                        fechaCreacion: Date.now(),
-                        esCaracterRaiz: true,
-                        tema: 'General',
-                        numero_trazos: c.trazos || 0,
-                        estructura: {
-                            trazos_clave: [],
-                            radicales: c.radical ? [c.radical] : [],
-                            tipo_estructura: 'simple'
-                        },
-                        mnemotecnia: c.mnemotecnia || '',
-                        variantes: null,
-                        esPalabraDerivada: false,
-                        caracterRaiz: null,
-                        desgloseMorfologico: '',
-                        desgloseCaracteres: [],
-                        asociacionVisual: '',
-                        ejemploFrase: c.frases_ejemplo?.[0] || '',
-                        familiaSemanticaPrincipal: 'Caracteres Raíz',
-                        temaFamilia: 'General',
-                        _version_estandar: versionEstandar
-                    };
-                    await db.guardarPalabra(raizObj);
-                    totalCaracteres++;
-                    const derivadas = c.palabras_derivadas || [];
-                    for (const d of derivadas) {
-                        if (!d) continue;
-                        const derivadaObj = {
-                            palabra: d,
-                            hanzi: d,
-                            pinyin: '',
-                            significado: `Relacionado con ${simbolo}`,
-                            familia: 'derivada',
-                            familias: ['derivada'],
-                            familiaSemantica: 'Caracteres Raíz',
-                            nivel: nivel,
-                            tipo: 'sustantivo',
-                            idioma: idioma,
-                            frecuencia: 1,
-                            neuroScore: 0.5,
-                            nivelDominio: 'nuevo',
-                            fechaCreacion: Date.now(),
-                            esPalabraDerivada: true,
-                            caracterRaiz: simbolo,
-                            desgloseMorfologico: `Contiene el carácter "${simbolo}"`,
-                            desgloseCaracteres: [
-                                { caracter: simbolo, pinyin: c.pinyin || '', significado: c.significado || '' }
-                            ],
-                            asociacionVisual: `🔗 ${d} contiene el carácter ${simbolo}`,
-                            ejemploFrase: c.frases_ejemplo?.[0] || '',
-                            familiaSemanticaPrincipal: 'Caracteres Raíz',
-                            temaFamilia: 'General',
-                            _version_estandar: versionEstandar
-                        };
-                        await db.guardarPalabra(derivadaObj);
-                    }
-                }
-            }
-        }
-        
-        if (datosReales.logros) {
-            for (const logro of datosReales.logros) {
-                if (logro.nombre) { this._logrosDesbloqueados.add(logro.nombre); }
-            }
-            await this._guardarLogros();
-        }
-        
-        if (window.vigiaGramatical) {
             try {
-                await window.vigiaGramatical.initGramatical();
-                await window.vigiaGramatical._actualizarEdadGramatical(idioma);
+                const btnValidar = document.getElementById('btnValidarEscritura');
+                const input = document.getElementById('respuestaEscritura');
+                
+                if (!btnValidar || !input) {
+                    this._enlaceIntentos++;
+                    console.log(`⏳ Elementos de escritura aún no disponibles, reintentando (${this._enlaceIntentos}/${this._maxEnlaceIntentos})...`);
+                    setTimeout(() => this._enlazarEventosEscritura(), 100);
+                    return;
+                }
+                
+                const newBtn = btnValidar.cloneNode(true);
+                btnValidar.parentNode.replaceChild(newBtn, btnValidar);
+                
+                const newInput = input.cloneNode(true);
+                input.parentNode.replaceChild(newInput, input);
+                
+                newBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._validarRespuestaEscrita();
+                });
+                
+                newInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this._validarRespuestaEscrita();
+                    }
+                });
+                
+                this._eventosEnlazados = true;
+                setTimeout(() => {
+                    if (newInput && document.body.contains(newInput)) newInput.focus();
+                }, 100);
+            } catch (e) {
+                console.warn('⚠️ Error enlazando eventos de escritura:', e);
+                this._enlaceIntentos++;
+                if (this._enlaceIntentos <= this._maxEnlaceIntentos) {
+                    setTimeout(() => this._enlazarEventosEscritura(), 200);
+                }
+            }
+        }
+
+        // ============================================================
+        // VALIDACIÓN DE RESPUESTA ESCRITA
+        // ============================================================
+        
+        async _validarRespuestaEscrita() {
+            try {
+                const input = document.getElementById('respuestaEscritura');
+                if (!input) {
+                    this._enlazarEventosEscritura();
+                    setTimeout(() => this._validarRespuestaEscrita(), 100);
+                    return;
+                }
+                
+                const respuesta = input.value.trim();
+                if (!respuesta) {
+                    this.core.mostrarToast('✏️ Escribe una respuesta primero.', 'warning');
+                    return;
+                }
+                
+                if (!pipeline || !pipeline.fraseActual) return;
+                
+                this.core.mostrarToast('🔍 Validando respuesta...', 'info');
+                
+                const frase = pipeline.fraseActual;
+                const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+                const nivel = frase.nivel || pipeline.nivel || 'A1';
+                const esInverso = window.modoInverso && window.modoInverso.isActivo();
+                const esJeroglifico = frase.esJeroglifico || this._esJeroglifico(idioma);
+                
+                let correctaEsperada;
+                let direccionGroq;
+                if (esInverso) {
+                    correctaEsperada = frase.original;
+                    direccionGroq = 'nativo_a_objetivo';
+                } else {
+                    correctaEsperada = frase.traduccion;
+                    direccionGroq = 'objetivo_a_nativo';
+                }
+                
+                let resultado = null;
+                let metodo = 'offline';
+                
+                if (window.vigia && window.vigia.enLinea && window.vigia._apiKeyValidada) {
+                    try {
+                        const groqResult = await window.vigia.validarTraduccionNatural(
+                            respuesta, correctaEsperada, idioma, nivel, direccionGroq
+                        );
+                        if (groqResult && groqResult.correcto !== undefined) {
+                            resultado = {
+                                correcto: groqResult.correcto || false,
+                                aproximado: groqResult.aproximado || false,
+                                mensaje: groqResult.mensaje || (groqResult.correcto ? '✅ ¡Perfecto! Validación con Groq.' : '❌ Incorrecto.'),
+                                correctaEsperada: groqResult.correctaEsperada || correctaEsperada,
+                                puntuacion: groqResult.puntuacion || (groqResult.correcto ? 100 : 0),
+                                metodo: 'online_groq'
+                            };
+                            metodo = 'online';
+                            this._metodoValidacion = 'online';
+                        }
+                    } catch (e) {
+                        metodo = 'offline';
+                        this._metodoValidacion = 'offline';
+                    }
+                }
+                
+                if (!resultado) {
+                    const similitud = this._calcularSimilitudLevenshtein(respuesta.toLowerCase(), correctaEsperada.toLowerCase());
+                    const esExacto = respuesta.toLowerCase().trim() === correctaEsperada.toLowerCase().trim();
+                    const esAproximado = similitud >= 0.7 && !esExacto;
+                    const esParcial = similitud >= 0.5 && !esExacto && !esAproximado;
+                    let mensaje = '';
+                    if (esExacto) mensaje = '✅ ¡Perfecto! Respuesta correcta.';
+                    else if (esAproximado) mensaje = '🟡 Muy cerca. Revisa pequeños detalles.';
+                    else if (esParcial) mensaje = '🟡 Aproximado. Intenta mejorar la precisión.';
+                    else mensaje = `❌ Incorrecto. La respuesta correcta es: "${correctaEsperada}"`;
+                    resultado = {
+                        correcto: esExacto,
+                        aproximado: esAproximado || esParcial,
+                        mensaje: mensaje,
+                        correctaEsperada: correctaEsperada,
+                        puntuacion: Math.round(similitud * 100),
+                        metodo: 'offline'
+                    };
+                }
+                
+                this._ultimaRespuesta = resultado;
+                input.value = '';
+                this._renderizarFraseInteractiva();
+                
+                if (resultado.correcto) {
+                    this.core.mostrarToast('✅ ¡Correcto!', 'success');
+                    await this._reforzarElemento(frase.id, 'frase', 1);
+                } else if (resultado.aproximado) {
+                    this.core.mostrarToast('🟡 Casi correcto. Sigue así.', 'warning');
+                    await this._reforzarElemento(frase.id, 'frase', 0.3);
+                } else {
+                    this.core.mostrarToast('❌ Incorrecto. Revisa la respuesta correcta.', 'error');
+                    await this._debilistarElemento(frase.id, 'frase');
+                }
+                
+                await this._recargarProgresoCompleto();
+                await this._guardarIndiceEstudio();
+                await this._verificarProgresoTema();
+                
+            } catch (e) {
+                console.error('❌ Error validando respuesta:', e);
+                this.core.mostrarToast('❌ Error al validar la respuesta', 'error');
+            }
+        }
+
+        // ============================================================
+        // MÉTODOS AUXILIARES DE VALIDACIÓN
+        // ============================================================
+        
+        _calcularSimilitudLevenshtein(a, b) {
+            if (a.length === 0) return b.length === 0 ? 1 : 0;
+            if (b.length === 0) return 0;
+            const matrix = [];
+            for (let i = 0; i <= a.length; i++) matrix[i] = [i];
+            for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+            for (let i = 1; i <= a.length; i++) {
+                for (let j = 1; j <= b.length; j++) {
+                    const cost = a[i-1] === b[j-1] ? 0 : 1;
+                    matrix[i][j] = Math.min(matrix[i-1][j] + 1, matrix[i][j-1] + 1, matrix[i-1][j-1] + cost);
+                }
+            }
+            const distancia = matrix[a.length][b.length];
+            const maxLen = Math.max(a.length, b.length);
+            return 1 - (distancia / maxLen);
+        }
+
+        async _reforzarElemento(id, tipo, cantidad = 1) {
+            try {
+                const progreso = await db.obtenerProgreso(id);
+                if (progreso) {
+                    progreso.rcn = Math.min(5, (progreso.rcn || 0) + cantidad * 0.3);
+                    progreso.repasosExitosos = (progreso.repasosExitosos || 0) + 1;
+                    progreso.ultimoRepaso = Date.now();
+                    await db.guardarProgreso(progreso);
+                }
             } catch (e) {}
         }
-        
-        if (window.gramatica) {
-            await gramatica.cargarPalabras();
-            await gramatica.agrupar();
-        }
-        if (window.pipeline) {
-            await pipeline.cargarFrases();
-            await pipeline.cargarProgreso();
-        }
-        
-        const resumen = `✅ Super JSON importado correctamente\n\n📚 Temas: ${totalTemas}\n📖 Historias: ${totalHistorias}\n📝 Frases: ${totalFrases}\n📖 Palabras: ${totalPalabras}\n📋 Reglas gramaticales: ${totalReglas}\n${esJeroglifico ? `🀄 Caracteres: ${totalCaracteres}\n` : ''}\n📝 Palabras desglosadas: ${totalPalabrasDesglosadas}\n📌 Versión: ${nombreVersion}\n🏆 Logros: ${datosReales.logros?.length || 0}\n📖 Todos los temas marcados como "En Curso"\n\n💡 Todo el contenido está disponible en sus respectivos módulos.`;
-        
-        await this._getCore()?.alert(resumen, '✅ Importación completada');
-        
-        if (window.UITemas) {
-            await window.UITemas._renderTemas();
-        }
-        if (window.UICaracteres) window.UICaracteres._limpiarCache();
-        if (window.UITemas) window.UITemas._renderTemas();
-        if (window.UIGrammar) window.UIGrammar._cargarGramatica();
-        if (window.UIDashboard) window.UIDashboard._cargarDashboardInicial(this._getCore());
-        if (window.UIEspacio) window.UIEspacio._renderizarMiEspacio();
-        
-        return { totalTemas, totalHistorias, totalFrases, totalPalabras, totalReglas, totalCaracteres, totalPalabrasDesglosadas };
-    }
 
-    async _guardarLogros() {
-        try {
-            localStorage.setItem('pipeline_logros_caracteres', JSON.stringify({
-                desbloqueados: Array.from(this._logrosDesbloqueados),
-                fecha: new Date().toISOString()
+        async _debilistarElemento(id, tipo) {
+            try {
+                const progreso = await db.obtenerProgreso(id);
+                if (progreso) {
+                    progreso.rcn = Math.max(0, (progreso.rcn || 0) - 0.2);
+                    progreso.repasosFallidos = (progreso.repasosFallidos || 0) + 1;
+                    progreso.ultimoRepaso = Date.now();
+                    await db.guardarProgreso(progreso);
+                }
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // GENERAR PISTA
+        // ============================================================
+        
+        async _generarPista() {
+            if (!pipeline || !pipeline.fraseActual) {
+                this.core.mostrarToast('❌ No hay frase activa', 'error');
+                return;
+            }
+            this.core.mostrarToast('🧠 Generando pista...', 'info');
+            try {
+                const pista = await pipeline.generarPista();
+                this._pistaActual = pista;
+                this._mostrandoRespuesta = true;
+                this._renderizarFraseInteractiva();
+                await this._guardarIndiceEstudio();
+            } catch (error) {
+                const frase = pipeline.fraseActual;
+                if (frase.esJeroglifico && frase.pinyinCompleto) {
+                    this._pistaActual = `💡 Pista fonética: "${frase.pinyinCompleto}"`;
+                } else if (frase.transcripcion) {
+                    this._pistaActual = `💡 Pista fonética: "${frase.transcripcion}"`;
+                } else {
+                    this._pistaActual = '💡 Intenta recordar el contexto y significado de la frase.';
+                }
+                this._mostrandoRespuesta = true;
+                this._renderizarFraseInteractiva();
+                await this._guardarIndiceEstudio();
+            }
+        }
+
+        // ============================================================
+        // OPCIÓN MÚLTIPLE
+        // ============================================================
+        
+        _renderMultiple(frase, modoData) {
+            const opciones = this._opcionesMultiple;
+            let correcta;
+            let etiqueta;
+            if (modoData.esInverso) {
+                correcta = frase.original;
+                etiqueta = 'frase original en ' + (frase.idioma || pipeline.idiomaObjetivo || 'es');
+            } else {
+                correcta = frase.traduccion;
+                etiqueta = 'traducción al español';
+            }
+            const resultado = this._ultimaRespuesta;
+            
+            let html = '<div style="padding:12px 0;border-top:2px solid var(--bg);border-bottom:2px solid var(--bg);margin-bottom:16px;">';
+            html += `<div style="font-size:14px;font-weight:600;color:var(--gray);margin-bottom:10px;">Selecciona la ${etiqueta} correcta:</div>`;
+            html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+            
+            for (let i = 0; i < opciones.length; i++) {
+                const opcion = opciones[i];
+                const isCorrect = opcion === correcta;
+                const isSelected = resultado && opcion === resultado.opcionSeleccionada;
+                let bgColor = 'var(--white)';
+                let borderColor = 'var(--light)';
+                let textColor = 'var(--dark)';
+                if (resultado) {
+                    if (isCorrect) {
+                        bgColor = 'rgba(0,184,148,0.1)';
+                        borderColor = 'var(--success)';
+                        textColor = 'var(--success)';
+                    } else if (isSelected && !isCorrect) {
+                        bgColor = 'rgba(255,118,117,0.1)';
+                        borderColor = 'var(--danger)';
+                        textColor = 'var(--danger)';
+                    }
+                }
+                const disabled = resultado ? 'style="cursor:default;opacity:0.8;"' : '';
+                const dataAttr = `data-texto="${opcion.replace(/'/g, "\\'")}"`;
+                html += `<div class="multiple-opcion" ${dataAttr} ${disabled} style="padding:12px 16px;border-radius:10px;border:2px solid ${borderColor};background:${bgColor};color:${textColor};cursor:${resultado ? 'default' : 'pointer'};text-align:center;font-size:${opcion.length > 10 ? '16px' : '18px'};font-weight:500;transition:all 0.3s;">`;
+                if (resultado && isCorrect) html += '✅ ';
+                else if (resultado && isSelected && !isCorrect) html += '❌ ';
+                html += opcion;
+                html += '</div>';
+            }
+            html += '</div>';
+            
+            if (resultado) {
+                const isCorrect = resultado.opcionSeleccionada === correcta;
+                const icono = isCorrect ? '✅' : '❌';
+                const color = isCorrect ? 'var(--success)' : 'var(--danger)';
+                html += '<div style="padding:10px 16px;border-radius:10px;background:' + color + '10;border-left:4px solid ' + color + ';margin-top:10px;">';
+                html += '<div style="font-size:14px;font-weight:500;">' + icono + ' ' + resultado.mensaje + '</div>';
+                html += '</div>';
+                html += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;">';
+                if (isCorrect) {
+                    html += '<button class="action-btn success" onclick="window.UIStudy._responderEstudio(\'correcto\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-check"></i> Correcto</button>';
+                } else {
+                    html += '<button class="action-btn danger" onclick="window.UIStudy._responderEstudio(\'fallo\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-times"></i> Fallo</button>';
+                }
+                html += '</div>';
+            } else {
+                html += '<div style="font-size:12px;color:var(--gray-light);text-align:center;margin-top:8px;">💡 Selecciona una opción para continuar</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // ============================================================
+        // ENLAZAR EVENTOS DE MÚLTIPLE
+        // ============================================================
+
+        _enlazarEventosMultiple() {
+            try {
+                const opciones = document.querySelectorAll('.multiple-opcion');
+                if (!opciones || opciones.length === 0) {
+                    setTimeout(() => this._enlazarEventosMultiple(), 50);
+                    return;
+                }
+                opciones.forEach(el => {
+                    const newEl = el.cloneNode(true);
+                    el.parentNode.replaceChild(newEl, el);
+                    newEl.addEventListener('click', () => {
+                        const opcion = newEl.dataset.texto;
+                        if (opcion && !this._ultimaRespuesta) {
+                            this._seleccionarOpcionMultiple(opcion);
+                        }
+                    });
+                });
+            } catch (e) {
+                console.warn('⚠️ Error enlazando eventos múltiple:', e);
+            }
+        }
+
+        async _seleccionarOpcionMultiple(opcion) {
+            if (this._ultimaRespuesta) return;
+            const frase = pipeline.fraseActual;
+            if (!frase) return;
+            let correcta;
+            if (window.modoInverso && window.modoInverso.isActivo()) {
+                correcta = frase.original;
+            } else {
+                correcta = frase.traduccion;
+            }
+            const isCorrect = opcion === correcta;
+            this._ultimaRespuesta = {
+                opcionSeleccionada: opcion,
+                correcto: isCorrect,
+                aproximado: false,
+                mensaje: isCorrect ? '✅ ¡Correcto! Has seleccionado la opción adecuada.' : '❌ Incorrecto. La respuesta correcta es: ' + correcta,
+                correctaEsperada: correcta
+            };
+            this._renderizarFraseInteractiva();
+            await this._guardarIndiceEstudio();
+            await this._verificarProgresoTema();
+        }
+
+        // ============================================================
+        // ESCUCHA
+        // ============================================================
+        
+        _renderEscucha(frase, modoData) {
+            const texto = modoData.esInverso ? modoData.ocultar : modoData.mostrar;
+            const esJeroglifico = modoData.esJeroglifico;
+            const transcripcion = esJeroglifico ? 
+                (frase.pinyinCompleto || frase.segmentacion?.pinyin || '') : 
+                (frase.transcripcion || '');
+            
+            let html = '<div style="padding:16px 0;border-top:2px solid var(--bg);border-bottom:2px solid var(--bg);margin-bottom:16px;text-align:center;">';
+            html += '<div style="font-size:48px;margin-bottom:12px;">🔊</div>';
+            html += '<div style="font-size:16px;color:var(--gray);margin-bottom:12px;">Escucha la frase y luego intenta repetirla en voz alta.</div>';
+            if (esJeroglifico) {
+                const hanzi = frase.segmentacion?.hanzi || frase.original || '';
+                html += `<div style="font-size:22px;font-weight:700;color:var(--dark);">${hanzi}</div>`;
+                html += `<div style="font-size:15px;color:var(--primary);margin-top:4px;letter-spacing:1px;font-weight:500;padding:4px 14px;background:var(--primary)08;border-radius:8px;display:inline-block;border:1px solid var(--primary)30;font-family:var(--font);">
+                    🔊 ${transcripcion || 'Sin pinyin disponible'}
+                </div>`;
+                html += `<div style="font-size:13px;color:var(--gray-light);margin-top:4px;">👂 Escucha la pronunciación y repite</div>`;
+            } else {
+                html += `<div style="font-size:18px;font-weight:600;color:var(--dark);">${texto}</div>`;
+                html += `<div style="font-size:15px;color:var(--secondary);margin-top:4px;letter-spacing:1px;font-weight:500;padding:4px 14px;background:var(--secondary)08;border-radius:8px;display:inline-block;border:1px solid var(--secondary)30;font-family:var(--font);">
+                    🎤 ${transcripcion || 'Sin transcripción disponible'}
+                </div>`;
+                html += `<div style="font-size:13px;color:var(--gray-light);margin-top:4px;">👂 Escucha la pronunciación y repite</div>`;
+            }
+            html += '<button class="btn-primary" onclick="window.UIStudy._reproducirFrase(\'' + texto.replace(/'/g, "\\'") + '\', \'' + (frase.idioma || pipeline.idiomaObjetivo || 'es') + '\')" style="padding:12px 30px;font-size:16px;margin-top:8px;">';
+            html += '<i class="fas fa-play"></i> Reproducir';
+            html += '</button>';
+            if (this._mostrandoRespuesta) {
+                html += '<div style="margin-top:12px;padding:12px;background:rgba(108,92,231,0.06);border-radius:10px;font-size:16px;color:var(--primary);">' + modoData.ocultar + '</div>';
+            } else {
+                html += '<button class="btn-secondary" onclick="window.UIStudy._toggleFlashcardRespuesta()" style="margin-top:12px;padding:6px 16px;font-size:12px;">Mostrar ' + (modoData.esInverso ? 'original' : 'traducción') + '</button>';
+            }
+            html += '</div>';
+            html += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">';
+            html += '<button class="action-btn danger" onclick="window.UIStudy._responderEstudio(\'fallo\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-times"></i> Fallo</button>';
+            html += '<button class="action-btn warning" onclick="window.UIStudy._responderEstudio(\'duda\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-question"></i> Duda</button>';
+            html += '<button class="action-btn info" onclick="window.UIStudy._responderEstudio(\'parcial\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-minus"></i> Parcial</button>';
+            html += '<button class="action-btn success" onclick="window.UIStudy._responderEstudio(\'correcto\')" style="padding:8px 14px;font-size:11px;min-width:60px;"><i class="fas fa-check"></i> Correcto</button>';
+            html += '</div>';
+            return html;
+        }
+
+        _reproducirFrase(texto, idioma) {
+            if (!window.speechSynthesis) {
+                this.core.mostrarToast('⚠️ Tu navegador no soporta síntesis de voz.', 'error');
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(texto);
+            utterance.lang = idioma || 'es';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            utterance.volume = 1;
+            const voices = window.speechSynthesis.getVoices();
+            const nativeVoice = voices.find(v => v.lang.startsWith(utterance.lang));
+            if (nativeVoice) utterance.voice = nativeVoice;
+            window.speechSynthesis.speak(utterance);
+            this.core.mostrarToast('🔊 Reproduciendo...', 'info');
+        }
+
+        // ============================================================
+        // MODAL DE PALABRAS DESGLOSADAS AVANZADO
+        // ============================================================
+
+        async _abrirModalGuardarPalabra(palabra, pinyin, significado, familia, idioma, nivel) {
+            try {
+                console.log('📖 Abriendo modal avanzado para palabra:', palabra);
+                
+                let modal = document.getElementById('modalPalabraAvanzado');
+                if (!modal) {
+                    modal = this._crearModalPalabraAvanzado();
+                }
+                
+                const body = document.getElementById('modalPalabraAvanzadoBody');
+                const titulo = document.getElementById('modalPalabraAvanzadoTitulo');
+                const subtitulo = document.getElementById('modalPalabraAvanzadoSubtitulo');
+                const icono = document.getElementById('modalPalabraAvanzadoIcono');
+                
+                if (!modal || !body) {
+                    console.error('❌ Modal no disponible');
+                    this.core?.mostrarToast('❌ Error: modal no disponible', 'error');
+                    return;
+                }
+                
+                modal.style.display = 'flex';
+                this._modalAvanzadoAbierto = true;
+                body.innerHTML = `
+                    <div style="text-align:center;padding:30px;color:var(--gray);">
+                        <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary);"></i>
+                        <p style="margin-top:12px;">Cargando información de "${palabra}"...</p>
+                    </div>
+                `;
+                
+                const idiomaReal = idioma || gestorIdiomas?.getIdiomaActivo() || 'es';
+                const nivelReal = nivel || this._obtenerNivelRealUsuario();
+                const esJeroglifico = this._esJeroglifico(idiomaReal);
+                
+                let palabraCompleta = null;
+                let palabraId = null;
+                
+                const todasPalabras = await db.obtenerPalabrasPorIdioma(idiomaReal);
+                const textoLower = palabra.toLowerCase();
+                palabraCompleta = todasPalabras.find(p => {
+                    const pTexto = (p.palabra || p.hanzi || '').toLowerCase();
+                    return pTexto === textoLower;
+                });
+                
+                if (palabraCompleta) {
+                    palabraId = palabraCompleta.id;
+                }
+                
+                let rcn = 0, fase = 1, repasosExitosos = 0, repasosFallidos = 0;
+                let estadoRCN = '🔴 Nuevo';
+                let estadoColor = 'var(--danger)';
+                let estadoRCNBarra = 0;
+                
+                if (palabraId) {
+                    const progreso = await db.obtenerProgreso(palabraId);
+                    if (progreso) {
+                        rcn = progreso.rcn || 0;
+                        fase = progreso.fase || 1;
+                        repasosExitosos = progreso.repasosExitosos || 0;
+                        repasosFallidos = progreso.repasosFallidos || 0;
+                        
+                        if (rcn >= 4) {
+                            estadoRCN = '🟣 Dominado';
+                            estadoColor = 'var(--success)';
+                            estadoRCNBarra = 100;
+                        } else if (rcn >= 3) {
+                            estadoRCN = '🟢 Consolidado';
+                            estadoColor = 'var(--success)';
+                            estadoRCNBarra = 75;
+                        } else if (rcn >= 2) {
+                            estadoRCN = '🟡 En progreso';
+                            estadoColor = 'var(--warning)';
+                            estadoRCNBarra = 50;
+                        } else if (rcn >= 0.5) {
+                            estadoRCN = '🟠 Iniciando';
+                            estadoColor = 'var(--info)';
+                            estadoRCNBarra = 25;
+                        } else {
+                            estadoRCN = '🔴 Necesita práctica';
+                            estadoColor = 'var(--danger)';
+                            estadoRCNBarra = 5;
+                        }
+                    }
+                }
+                
+                const familiaSemantica = palabraCompleta?.familiaSemantica || palabraCompleta?.familia || familia || 'General';
+                const familiaGramatical = palabraCompleta?.tipo || palabraCompleta?.familia || 'sustantivo';
+                const colorSemantica = this._getColorFamiliaSemantica(familiaSemantica);
+                const colorGramatical = this._getColorFamiliaGramatical(familiaGramatical);
+                
+                const todasFrases = await db.obtenerFrasesPorIdioma(idiomaReal);
+                const frasesRelacionadas = [];
+                const textoLower2 = palabra.toLowerCase();
+                
+                for (const f of todasFrases) {
+                    const original = (f.original || '').toLowerCase();
+                    if (original.includes(textoLower2)) {
+                        frasesRelacionadas.push(f);
+                    }
+                    if (f.palabras && Array.isArray(f.palabras)) {
+                        for (const p of f.palabras) {
+                            const pTexto = (p.palabra || p.hanzi || '').toLowerCase();
+                            if (pTexto === textoLower2) {
+                                if (!frasesRelacionadas.some(fr => fr.id === f.id)) {
+                                    frasesRelacionadas.push(f);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                const palabrasRelacionadas = todasPalabras.filter(p => {
+                    const fam = p.familiaSemantica || p.familia || '';
+                    return fam === familiaSemantica && 
+                           (p.palabra || p.hanzi || '').toLowerCase() !== textoLower &&
+                           (p.palabra || p.hanzi || '');
+                }).slice(0, 8);
+                
+                let esFavorita = false;
+                if (palabraId && window.gestorFavoritos) {
+                    try {
+                        esFavorita = await window.gestorFavoritos.estaEnFavoritos('palabra', palabraId);
+                    } catch (e) {}
+                }
+                
+                const pinyinFinal = palabraCompleta?.pinyin || pinyin || '';
+                const significadoFinal = palabraCompleta?.significado || significado || palabra;
+                
+                body.innerHTML = this._renderizarModalPalabraAvanzado({
+                    texto: palabra,
+                    pinyin: pinyinFinal,
+                    significado: significadoFinal,
+                    familiaSemantica: familiaSemantica,
+                    familiaGramatical: familiaGramatical,
+                    nivel: nivelReal,
+                    esJeroglifico: esJeroglifico,
+                    esCaracterRaiz: palabraCompleta?.esCaracterRaiz || false,
+                    esPalabraDerivada: palabraCompleta?.esPalabraDerivada || false,
+                    caracterRaiz: palabraCompleta?.caracterRaiz || null,
+                    palabraId: palabraId,
+                    rcn: rcn,
+                    fase: fase,
+                    repasosExitosos: repasosExitosos,
+                    repasosFallidos: repasosFallidos,
+                    estadoRCN: estadoRCN,
+                    estadoColor: estadoColor,
+                    estadoRCNBarra: estadoRCNBarra,
+                    esFavorita: esFavorita,
+                    frasesRelacionadas: frasesRelacionadas,
+                    palabrasRelacionadas: palabrasRelacionadas,
+                    colorSemantica: colorSemantica,
+                    colorGramatical: colorGramatical,
+                    idioma: idiomaReal,
+                    origen: 'estudio'
+                });
+                
+                if (titulo) titulo.textContent = palabra;
+                if (subtitulo) {
+                    subtitulo.textContent = `${familiaSemantica} · ${familiaGramatical} · Nivel ${nivelReal}`;
+                }
+                if (icono) {
+                    icono.textContent = palabraCompleta?.esCaracterRaiz ? '🌟' : (esJeroglifico ? '🀄' : '📖');
+                }
+                
+                this._configurarBotonesModalPalabraAvanzado(palabraId, palabra, idiomaReal, nivelReal, familiaSemantica);
+                
+                this._palabraModalActual = {
+                    id: palabraId,
+                    texto: palabra,
+                    idioma: idiomaReal,
+                    nivel: nivelReal,
+                    familia: familiaSemantica
+                };
+                
+                console.log('✅ Modal avanzado de palabra abierto correctamente');
+                
+            } catch (error) {
+                console.error('❌ Error abriendo modal avanzado:', error);
+                this.core?.mostrarToast('❌ Error al abrir el modal', 'error');
+            }
+        }
+
+        // ============================================================
+        // CREAR MODAL PALABRA AVANZADO
+        // ============================================================
+
+        _crearModalPalabraAvanzado() {
+            const existing = document.getElementById('modalPalabraAvanzado');
+            if (existing) {
+                existing.style.display = 'none';
+                return existing;
+            }
+            
+            const modal = document.createElement('div');
+            modal.id = 'modalPalabraAvanzado';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.7);
+                backdrop-filter: blur(10px);
+                z-index: 100000;
+                display: none;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+                animation: fadeIn 0.3s ease;
+            `;
+            
+            modal.innerHTML = `
+                <div id="modalPalabraAvanzadoContent" style="
+                    background: var(--white, #ffffff);
+                    border-radius: 20px;
+                    padding: 0;
+                    max-width: 650px;
+                    width: 100%;
+                    max-height: 90vh;
+                    display: flex;
+                    flex-direction: column;
+                    box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+                    animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+                    overflow: hidden;
+                    font-family: var(--font, -apple-system, BlinkMacSystemFont, sans-serif);
+                ">
+                    <div style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        padding: 16px 20px;
+                        background: linear-gradient(135deg, var(--primary)08, var(--secondary)08);
+                        border-bottom: 2px solid var(--primary)20;
+                        flex-shrink: 0;
+                    ">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <span id="modalPalabraAvanzadoIcono" style="font-size:28px;">📖</span>
+                            <div>
+                                <h3 id="modalPalabraAvanzadoTitulo" style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">Palabra</h3>
+                                <span id="modalPalabraAvanzadoSubtitulo" style="font-size:12px;color:var(--gray);">Cargando...</span>
+                            </div>
+                        </div>
+                        <button onclick="window.UIStudy._cerrarModalPalabraAvanzado()" style="
+                            background: none;
+                            border: none;
+                            font-size: 28px;
+                            color: var(--gray);
+                            cursor: pointer;
+                            transition: all 0.3s;
+                            padding: 0 8px;
+                        " onmouseover="this.style.color='var(--danger)'" onmouseout="this.style.color='var(--gray)'">
+                            &times;
+                        </button>
+                    </div>
+                    
+                    <div id="modalPalabraAvanzadoBody" style="
+                        padding: 20px;
+                        overflow-y: auto;
+                        flex: 1;
+                    ">
+                        <div style="text-align:center;padding:30px;color:var(--gray);">
+                            <i class="fas fa-spinner fa-spin" style="font-size:32px;color:var(--primary);"></i>
+                            <p style="margin-top:12px;">Cargando información...</p>
+                        </div>
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        gap: 8px;
+                        padding: 12px 20px;
+                        border-top: 1px solid var(--light);
+                        flex-wrap: wrap;
+                        flex-shrink: 0;
+                        background: var(--bg);
+                    ">
+                        <button onclick="window.UIStudy._cerrarModalPalabraAvanzado()" style="
+                            padding: 8px 20px;
+                            font-size: 13px;
+                            background: var(--light);
+                            color: var(--dark);
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-family: var(--font);
+                            transition: all 0.3s;
+                            flex: 1;
+                        " onmouseover="this.style.background='var(--gray-light)'" onmouseout="this.style.background='var(--light)'">
+                            Cerrar
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    this._cerrarModalPalabraAvanzado();
+                }
+            });
+            
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal.style.display === 'flex') {
+                    this._cerrarModalPalabraAvanzado();
+                }
+            });
+            
+            return modal;
+        }
+
+        // ============================================================
+        // RENDERIZAR CONTENIDO DEL MODAL AVANZADO
+        // ============================================================
+
+        _renderizarModalPalabraAvanzado(data) {
+            const {
+                texto, pinyin, significado, familiaSemantica, familiaGramatical,
+                nivel, esJeroglifico, esCaracterRaiz, esPalabraDerivada, caracterRaiz,
+                palabraId, rcn, fase, repasosExitosos, repasosFallidos,
+                estadoRCN, estadoColor, estadoRCNBarra, esFavorita,
+                frasesRelacionadas, palabrasRelacionadas,
+                colorSemantica, colorGramatical, idioma, origen
+            } = data;
+            
+            const totalRepasos = repasosExitosos + repasosFallidos;
+            const eficiencia = totalRepasos > 0 ? Math.round((repasosExitosos / totalRepasos) * 100) : 0;
+            
+            let nivelDominioSugerido = nivel;
+            if (rcn >= 4) {
+                const niveles = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+                const idx = niveles.indexOf(nivel);
+                if (idx < niveles.length - 1) {
+                    nivelDominioSugerido = niveles[idx + 1];
+                }
+            }
+            
+            return `
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div style="
+                        background: linear-gradient(135deg, var(--primary)06, var(--secondary)06);
+                        border-radius: 12px;
+                        padding: 16px 20px;
+                        text-align: center;
+                        border: 2px solid var(--primary)20;
+                    ">
+                        <div style="
+                            font-size: ${esJeroglifico ? '48px' : '32px'};
+                            font-weight: 800;
+                            color: var(--dark);
+                            line-height: 1.2;
+                        ">${texto}</div>
+                        ${pinyin ? `
+                            <div style="
+                                font-size: 18px;
+                                color: var(--gray-light);
+                                letter-spacing: 1.5px;
+                                margin-top: 4px;
+                            ">🔊 ${pinyin}</div>
+                        ` : ''}
+                        <div style="
+                            font-size: 20px;
+                            font-weight: 600;
+                            color: var(--primary);
+                            margin-top: 4px;
+                        ">${significado}</div>
+                    </div>
+                    
+                    <div style="
+                        display: flex;
+                        gap: 12px;
+                        flex-wrap: wrap;
+                        justify-content: center;
+                        padding: 8px 12px;
+                        background: var(--bg);
+                        border-radius: 8px;
+                        border: 1px solid var(--light);
+                    ">
+                        <span style="font-size:13px;color:var(--gray);">
+                            🧠 RCN: <strong style="color:${estadoColor};">${rcn.toFixed(1)}</strong>
+                        </span>
+                        <span style="font-size:13px;color:var(--gray);">
+                            📊 Fase: <strong>${fase}</strong>
+                        </span>
+                        <span style="font-size:13px;color:var(--gray);">
+                            ✅ Aciertos: <strong>${repasosExitosos}</strong>
+                        </span>
+                        <span style="font-size:13px;color:var(--gray);">
+                            ❌ Fallos: <strong>${repasosFallidos}</strong>
+                        </span>
+                        <span style="font-size:13px;color:${estadoColor};font-weight:600;">
+                            ${estadoRCN}
+                        </span>
+                    </div>
+                    
+                    <div style="background:var(--bg);border-radius:8px;padding:6px 12px;">
+                        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--gray);margin-bottom:2px;">
+                            <span>📈 Progreso de RCN</span>
+                            <span>${Math.round((rcn / 5) * 100)}%</span>
+                        </div>
+                        <div style="height:6px;background:var(--light);border-radius:3px;overflow:hidden;">
+                            <div style="
+                                height: 100%;
+                                width: ${Math.round((rcn / 5) * 100)}%;
+                                background: ${estadoColor};
+                                border-radius: 3px;
+                                transition: width 0.8s ease;
+                            "></div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--gray-light);margin-top:2px;">
+                            <span>🔴 Nuevo</span>
+                            <span>🟡 En progreso</span>
+                            <span>🟢 Consolidado</span>
+                            <span>🟣 Dominado</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div style="background:var(--bg);border-radius:6px;padding:8px;text-align:center;">
+                            <div style="font-size:16px;font-weight:800;color:var(--secondary);">${eficiencia}%</div>
+                            <div style="font-size:9px;color:var(--gray);text-transform:uppercase;">Eficiencia</div>
+                        </div>
+                        <div style="background:var(--bg);border-radius:6px;padding:8px;text-align:center;">
+                            <div style="font-size:16px;font-weight:800;color:var(--warning);">${nivelDominioSugerido}</div>
+                            <div style="font-size:9px;color:var(--gray);text-transform:uppercase;">Nivel Sugerido</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                        <span style="
+                            background: ${colorSemantica}15;
+                            color: ${colorSemantica};
+                            padding: 4px 14px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 600;
+                        ">📂 ${familiaSemantica}</span>
+                        <span style="
+                            background: ${colorGramatical}15;
+                            color: ${colorGramatical};
+                            padding: 4px 14px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 600;
+                        ">📝 ${familiaGramatical}</span>
+                        <span style="
+                            background: var(--bg);
+                            color: var(--gray);
+                            padding: 4px 14px;
+                            border-radius: 12px;
+                            font-size: 12px;
+                            font-weight: 600;
+                        ">🎯 ${nivel}</span>
+                        ${esCaracterRaiz ? `
+                            <span style="
+                                background: var(--primary)15;
+                                color: var(--primary);
+                                padding: 4px 14px;
+                                border-radius: 12px;
+                                font-size: 12px;
+                                font-weight: 600;
+                            ">🌟 Carácter Raíz</span>
+                        ` : ''}
+                        ${esPalabraDerivada && caracterRaiz ? `
+                            <span style="
+                                background: var(--secondary)15;
+                                color: var(--secondary);
+                                padding: 4px 14px;
+                                border-radius: 12px;
+                                font-size: 12px;
+                                font-weight: 600;
+                            ">🔗 Derivada de "${caracterRaiz}"</span>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                        <button id="btnGuardarPalabraAvanzado" style="
+                            padding: 8px 20px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-family: var(--font);
+                            transition: all 0.3s;
+                            background: ${esFavorita ? 'var(--success)' : 'linear-gradient(135deg, #6C5CE7, #A29BFE)'};
+                            color: white;
+                            flex: 1;
+                            min-width: 140px;
+                        " onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 4px 20px rgba(108,92,231,0.3)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                            <i class="fas ${esFavorita ? 'fa-check' : 'fa-star'}"></i> 
+                            ${esFavorita ? '✅ En Mi Espacio' : '⭐ Guardar en Mi Espacio'}
+                        </button>
+                        ${frasesRelacionadas.length > 0 ? `
+                            <button id="btnEstudiarFrasesAvanzado" style="
+                                padding: 8px 20px;
+                                font-size: 13px;
+                                font-weight: 600;
+                                border: none;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-family: var(--font);
+                                transition: all 0.3s;
+                                background: linear-gradient(135deg, #00B894, #55EFC4);
+                                color: white;
+                                flex: 1;
+                                min-width: 140px;
+                            " onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 4px 20px rgba(0,184,148,0.3)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                                <i class="fas fa-play"></i> Estudiar Frases (${frasesRelacionadas.length})
+                            </button>
+                        ` : ''}
+                    </div>
+                    
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+                        <button id="btnPracticarEscrituraAvanzado" style="
+                            padding: 6px 16px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-family: var(--font);
+                            transition: all 0.3s;
+                            background: var(--secondary);
+                            color: white;
+                        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='none'">
+                            <i class="fas fa-pencil-alt"></i> Practicar Escritura
+                        </button>
+                        <button id="btnBuscarGramaticaAvanzado" style="
+                            padding: 6px 16px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-family: var(--font);
+                            transition: all 0.3s;
+                            background: var(--primary);
+                            color: white;
+                        " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='none'">
+                            <i class="fas fa-search"></i> Buscar en Gramática
+                        </button>
+                        <button onclick="window.UIStudy._cerrarModalPalabraAvanzado()" style="
+                            padding: 6px 16px;
+                            font-size: 12px;
+                            font-weight: 600;
+                            border: none;
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-family: var(--font);
+                            transition: all 0.3s;
+                            background: var(--light);
+                            color: var(--dark);
+                        " onmouseover="this.style.background='var(--gray-light)'" onmouseout="this.style.background='var(--light)'">
+                            <i class="fas fa-times"></i> Cerrar
+                        </button>
+                    </div>
+                    
+                    ${frasesRelacionadas.length > 0 ? `
+                        <div style="
+                            background: var(--bg);
+                            border-radius: 8px;
+                            padding: 12px 14px;
+                            border: 1px solid var(--light);
+                        ">
+                            <div style="
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: var(--gray);
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                                margin-bottom: 6px;
+                            ">📖 Frases donde aparece (${frasesRelacionadas.length})</div>
+                            <div style="display:flex;flex-direction:column;gap:4px;max-height:150px;overflow-y:auto;">
+                                ${frasesRelacionadas.slice(0,5).map(f => {
+                                    const esJeroglificoF = f.esJeroglifico || esJeroglifico;
+                                    const hanzi = f.segmentacion?.hanzi || f.original;
+                                    const pinyinF = f.pinyinCompleto || f.segmentacion?.pinyin || '';
+                                    return `
+                                        <div style="
+                                            background: var(--white);
+                                            border-radius: 6px;
+                                            padding: 6px 10px;
+                                            border: 1px solid var(--light);
+                                            font-size: 12px;
+                                            cursor: pointer;
+                                            transition: all 0.2s;
+                                        " onclick="window.UIStudy._cerrarModalPalabraAvanzado();window.UIStudy._estudiarFrasesConPalabra('${texto.replace(/'/g, "\\'")}')" 
+                                           onmouseover="this.style.borderColor='var(--primary)';this.style.background='var(--primary)04'" 
+                                           onmouseout="this.style.borderColor='var(--light)';this.style.background='var(--white)'">
+                                            <div style="font-weight:600;color:var(--dark);">${esJeroglificoF ? hanzi : f.original}</div>
+                                            ${pinyinF ? `<div style="font-size:10px;color:var(--gray-light);">${pinyinF}</div>` : ''}
+                                            <div style="font-size:11px;color:var(--gray);">→ ${f.traduccion}</div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                                ${frasesRelacionadas.length > 5 ? `
+                                    <div style="font-size:11px;color:var(--gray-light);text-align:center;padding:4px;">
+                                        +${frasesRelacionadas.length - 5} frases más
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${palabrasRelacionadas.length > 0 ? `
+                        <div style="
+                            background: var(--bg);
+                            border-radius: 8px;
+                            padding: 12px 14px;
+                            border: 1px solid var(--light);
+                        ">
+                            <div style="
+                                font-size: 12px;
+                                font-weight: 600;
+                                color: var(--gray);
+                                text-transform: uppercase;
+                                letter-spacing: 0.5px;
+                                margin-bottom: 6px;
+                            ">🔗 Misma familia semántica (${palabrasRelacionadas.length})</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                ${palabrasRelacionadas.map(p => {
+                                    const pTexto = p.palabra || p.hanzi || '';
+                                    const pPinyin = p.pinyin || '';
+                                    return `
+                                        <span style="
+                                            display: inline-flex;
+                                            flex-direction: column;
+                                            align-items: center;
+                                            padding: 4px 12px;
+                                            background: var(--white);
+                                            border-radius: 8px;
+                                            border: 1px solid var(--light);
+                                            cursor: pointer;
+                                            font-size: 12px;
+                                            transition: all 0.2s;
+                                        " onclick="window.UIStudy._cerrarModalPalabraAvanzado();window.UIStudy._abrirModalGuardarPalabra('${pTexto.replace(/'/g, "\\'")}', '${pPinyin.replace(/'/g, "\\'")}', '${(p.significado || '').replace(/'/g, "\\'")}', '${(p.familia || p.familiaSemantica || 'General').replace(/'/g, "\\'")}', '${idioma}', '${p.nivel || nivel}')" 
+                                           onmouseover="this.style.borderColor='var(--primary)';this.style.transform='scale(1.05)'" 
+                                           onmouseout="this.style.borderColor='var(--light)';this.style.transform='none'">
+                                            <span style="font-weight:600;font-size:14px;">${pTexto}</span>
+                                            ${pPinyin ? `<span style="font-size:9px;color:var(--gray-light);">${pPinyin}</span>` : ''}
+                                        </span>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="
+                        border-top: 2px solid var(--primary);
+                        padding-top: 12px;
+                        margin-top: 4px;
+                    ">
+                        <button id="btnVolverEstudioAvanzado" style="
+                            width: 100%;
+                            padding: 10px 20px;
+                            font-size: 14px;
+                            font-weight: 700;
+                            border: none;
+                            border-radius: 8px;
+                            cursor: pointer;
+                            font-family: var(--font);
+                            transition: all 0.3s;
+                            background: linear-gradient(135deg, #6C5CE7, #00CEC9);
+                            color: white;
+                        " onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 4px 20px rgba(108,92,231,0.3)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                            <i class="fas fa-arrow-left"></i> Volver al Estudio
+                        </button>
+                    </div>
+                    <div style="
+                        font-size: 10px;
+                        color: var(--gray-light);
+                        text-align: center;
+                        border-top: 1px solid var(--light);
+                        padding-top: 8px;
+                    ">
+                        💡 Haz clic en cualquier palabra relacionada para explorar su detalle
+                        ${esCaracterRaiz ? ' · 🌟 Carácter raíz' : ''}
+                        ${palabraId ? ` · 🆔 ID: ${palabraId}` : ''}
+                        <br><span style="color:var(--primary);font-weight:500;">🔄 Todo retorna al Estudio</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ============================================================
+        // CONFIGURAR BOTONES DEL MODAL AVANZADO
+        // ============================================================
+
+        _configurarBotonesModalPalabraAvanzado(palabraId, palabra, idioma, nivel, familia) {
+            const btnGuardar = document.getElementById('btnGuardarPalabraAvanzado');
+            if (btnGuardar) {
+                const newBtn = btnGuardar.cloneNode(true);
+                btnGuardar.parentNode.replaceChild(newBtn, btnGuardar);
+                newBtn.onclick = async () => {
+                    await this._guardarPalabraEnEspacioDesdeModal(palabraId, palabra, idioma, nivel, familia);
+                };
+            }
+            
+            const btnEstudiar = document.getElementById('btnEstudiarFrasesAvanzado');
+            if (btnEstudiar) {
+                const newBtn = btnEstudiar.cloneNode(true);
+                btnEstudiar.parentNode.replaceChild(newBtn, btnEstudiar);
+                newBtn.onclick = () => {
+                    this._cerrarModalPalabraAvanzado();
+                    this._estudiarFrasesConPalabra(palabra);
+                };
+            }
+            
+            const btnEscritura = document.getElementById('btnPracticarEscrituraAvanzado');
+            if (btnEscritura) {
+                const newBtn = btnEscritura.cloneNode(true);
+                btnEscritura.parentNode.replaceChild(newBtn, btnEscritura);
+                newBtn.onclick = () => {
+                    this._cerrarModalPalabraAvanzado();
+                    this._practicarEscrituraDesdeModal(palabra, idioma);
+                };
+            }
+            
+            const btnGramatica = document.getElementById('btnBuscarGramaticaAvanzado');
+            if (btnGramatica) {
+                const newBtn = btnGramatica.cloneNode(true);
+                btnGramatica.parentNode.replaceChild(newBtn, btnGramatica);
+                newBtn.onclick = () => {
+                    this._cerrarModalPalabraAvanzado();
+                    this._buscarPalabraEnGramatica(palabra);
+                };
+            }
+            
+            const btnVolver = document.getElementById('btnVolverEstudioAvanzado');
+            if (btnVolver) {
+                const newBtn = btnVolver.cloneNode(true);
+                btnVolver.parentNode.replaceChild(newBtn, btnVolver);
+                newBtn.onclick = () => {
+                    this._cerrarModalPalabraAvanzado();
+                };
+            }
+        }
+
+        // ============================================================
+        // CERRAR MODAL AVANZADO
+        // ============================================================
+
+        _cerrarModalPalabraAvanzado() {
+            const modal = document.getElementById('modalPalabraAvanzado');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            this._modalAvanzadoAbierto = false;
+            this._palabraModalActual = null;
+        }
+
+        // ============================================================
+        // GUARDAR PALABRA EN MI ESPACIO DESDE MODAL
+        // ============================================================
+
+        async _guardarPalabraEnEspacioDesdeModal(palabraId, palabra, idioma, nivel, familia) {
+            try {
+                if (!window.gestorFavoritos) {
+                    this.core?.mostrarToast('❌ Gestor de favoritos no disponible', 'error');
+                    return;
+                }
+                
+                if (!window.gestorFavoritos._initDone) {
+                    await window.gestorFavoritos.init();
+                }
+                
+                const nombreNivel = `📚 Nivel ${nivel}`;
+                const nombreFamilia = `📂 ${familia}`;
+                
+                let idFinal = palabraId;
+                if (!idFinal) {
+                    const todasPalabras = await db.obtenerPalabrasPorIdioma(idioma);
+                    const encontrada = todasPalabras.find(p => 
+                        (p.palabra || p.hanzi || '').toLowerCase() === palabra.toLowerCase()
+                    );
+                    if (encontrada) {
+                        idFinal = encontrada.id;
+                    }
+                }
+                
+                if (!idFinal) {
+                    const esJeroglifico = this._esJeroglifico(idioma);
+                    const nuevaPalabra = {
+                        palabra: palabra,
+                        hanzi: esJeroglifico ? palabra : '',
+                        pinyin: '',
+                        significado: palabra,
+                        familia: familia || 'sin_clasificar',
+                        familias: [familia || 'sin_clasificar'],
+                        familiaSemantica: familia || 'sin_clasificar',
+                        nivel: nivel,
+                        tipo: 'sustantivo',
+                        idioma: idioma,
+                        frecuencia: 1,
+                        neuroScore: 0.5,
+                        nivelDominio: 'nuevo',
+                        fechaCreacion: Date.now()
+                    };
+                    idFinal = await db.guardarPalabra(nuevaPalabra);
+                }
+                
+                if (idFinal) {
+                    const esFavorita = await window.gestorFavoritos.estaEnFavoritos('palabra', idFinal);
+                    if (!esFavorita) {
+                        await window.gestorFavoritos.añadirPalabra(idFinal);
+                        await window.gestorFavoritos.añadirPalabraAGrupo(idFinal, nombreNivel);
+                        await window.gestorFavoritos.añadirPalabraAGrupo(idFinal, nombreFamilia);
+                        this.core?.mostrarToast(`✅ "${palabra}" guardada en ${nombreNivel} → ${nombreFamilia}`, 'success');
+                        this._cerrarModalPalabraAvanzado();
+                    } else {
+                        this.core?.mostrarToast(`ℹ️ "${palabra}" ya está en Mi Espacio`, 'info');
+                    }
+                }
+                
+                if (window.UIDashboard) {
+                    window.UIDashboard._cargarDashboardInicial(this.core);
+                }
+                if (window.UIEspacio) {
+                    window.UIEspacio._renderizarMiEspacio();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error guardando palabra:', error);
+                this.core?.mostrarToast('❌ Error al guardar la palabra', 'error');
+            }
+        }
+
+        // ============================================================
+        // ESTUDIAR FRASES CON UNA PALABRA
+        // ============================================================
+
+        async _estudiarFrasesConPalabra(texto) {
+            if (!texto) {
+                this.core?.mostrarToast('❌ No hay palabra para buscar', 'error');
+                return;
+            }
+            
+            const idioma = gestorIdiomas?.getIdiomaActivo() || 'es';
+            const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
+            const textoLower = texto.toLowerCase();
+            
+            const frasesEncontradas = todasFrases.filter(f => {
+                const original = (f.original || '').toLowerCase();
+                if (original.includes(textoLower)) return true;
+                if (f.palabras && Array.isArray(f.palabras)) {
+                    for (const p of f.palabras) {
+                        const pTexto = (p.palabra || p.hanzi || '').toLowerCase();
+                        if (pTexto === textoLower) return true;
+                    }
+                }
+                return false;
+            });
+            
+            if (frasesEncontradas.length === 0) {
+                this.core?.mostrarToast(`❌ No se encontraron frases con "${texto}"`, 'warning');
+                return;
+            }
+            
+            this.core?.mostrarToast(`📖 Estudiando ${frasesEncontradas.length} frases con "${texto}"`, 'info');
+            
+            const frasesConContexto = await Promise.all(frasesEncontradas.map(async (f) => {
+                const progreso = await db.obtenerProgreso(f.id);
+                return { ...f, progreso };
             }));
-        } catch (e) { console.warn('⚠️ Error guardando logros:', e); }
+            
+            frasesConContexto.sort((a, b) => {
+                const rcnA = a.progreso?.rcn || 0;
+                const rcnB = b.progreso?.rcn || 0;
+                return rcnA - rcnB;
+            });
+            
+            pipeline.frases = frasesConContexto;
+            pipeline.indiceFrase = 0;
+            await pipeline.cargarFrase(0);
+            
+            if (this.core) {
+                this.core.irAModulo('study');
+            }
+        }
+
+        // ============================================================
+        // PRACTICAR ESCRITURA DESDE MODAL
+        // ============================================================
+
+        async _practicarEscrituraDesdeModal(texto, idioma) {
+            this.core?.mostrarToast(`✍️ Practicando escritura de "${texto}"`, 'info');
+            
+            const todasFrases = await db.obtenerFrasesPorIdioma(idioma);
+            const fraseContexto = todasFrases.find(f => {
+                const original = (f.original || '').toLowerCase();
+                return original.includes(texto.toLowerCase());
+            });
+            
+            if (window.UIEspacio && window.UIEspacio._ejercicioRellenar) {
+                await window.UIEspacio._ejercicioRellenar(texto, idioma);
+            } else {
+                const resultado = await this.core?.prompt(
+                    `✍️ Practica la escritura de "${texto}"\n\n${fraseContexto ? `Contexto: "${fraseContexto.original}"` : ''}`,
+                    '',
+                    `Escribe "${texto}" correctamente...`,
+                    '✍️ Escritura'
+                );
+                if (resultado && resultado.trim() === texto) {
+                    this.core?.mostrarToast('✅ ¡Correcto!', 'success');
+                } else if (resultado) {
+                    this.core?.mostrarToast(`❌ Incorrecto. La palabra es: "${texto}"`, 'error');
+                }
+            }
+        }
+
+        // ============================================================
+        // BUSCAR PALABRA EN GRAMÁTICA
+        // ============================================================
+
+        _buscarPalabraEnGramatica(texto) {
+            if (window.UIGrammar) {
+                window.UIGrammar._busquedaGramatica = texto;
+                window.UIGrammar._cargarGramatica();
+                if (this.core) {
+                    this.core.irAModulo('grammar');
+                    this.core?.mostrarToast(`🔍 Buscando "${texto}" en gramática`, 'info');
+                }
+            } else {
+                this.core?.mostrarToast('🔍 Módulo de gramática no disponible', 'warning');
+            }
+        }
+
+        // ============================================================
+        // TOGGLE FRASE FAVORITA
+        // ============================================================
+        
+        async _toggleFraseFavorita(fraseId, checked) {
+            if (!fraseId) {
+                if (this.core) this.core.mostrarToast('❌ Error: ID de frase no válido', 'error');
+                return;
+            }
+            const nivelReal = this._obtenerNivelRealUsuario();
+            const nombreNivel = `📚 Nivel ${nivelReal}`;
+            try {
+                if (!window.gestorFavoritos || !gestorFavoritos._initDone) await window.gestorFavoritos.init();
+                if (checked) {
+                    const yaExiste = await gestorFavoritos.estaEnFavoritos('frase', fraseId);
+                    if (yaExiste) {
+                        if (this.core) this.core.mostrarToast('ℹ️ La frase ya está en Mi Espacio', 'info');
+                        return;
+                    }
+                    const result = await gestorFavoritos.añadirFrase(fraseId);
+                    if (result) {
+                        await gestorFavoritos.añadirFraseAGrupo(fraseId, this.GRUPO_USUARIO || '📌 Seleccionadas por Usuario');
+                        await gestorFavoritos.añadirFraseAGrupo(fraseId, nombreNivel);
+                        if (this.core) this.core.mostrarToast(`✅ Frase guardada en ${nombreNivel}`, 'success');
+                    }
+                } else {
+                    await gestorFavoritos.eliminarFrase(fraseId);
+                    if (this.core) this.core.mostrarToast('🗑️ Frase eliminada de Mi Espacio', 'warning');
+                }
+            } catch (error) {
+                console.warn('⚠️ Error al gestionar favorito:', error);
+            }
+            try {
+                if (window.uiCore) window.uiCore._actualizarEspacioStats();
+                if (window.UIDashboard) window.UIDashboard._cargarDashboardInicial(this.core);
+                if (window.UIEspacio) window.UIEspacio._renderizarMiEspacio();
+            } catch (e) {}
+        }
+
+        // ============================================================
+        // LIBRO DE LECTURA - MANTENIDO PARA COMPATIBILIDAD CON BIBLIOTECA
+        // ============================================================
+
+        async _abrirLibroLectura() {
+            const core = this.core;
+            const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+            if (this._libroAbierto && this._modoVista === 'libro') return;
+            this._libroAbierto = true;
+            this._modoVista = 'libro';
+            this._cerrandoLibro = false;
+            this._estudiandoTemaDesdeLibro = false;
+            
+            try {
+                const todasHistorias = await db.obtenerHistoriasPorIdioma(idioma);
+                if (!todasHistorias || todasHistorias.length === 0) {
+                    core?.mostrarToast('📚 No hay historias cargadas. Importa o genera contenido primero.', 'warning');
+                    this._libroAbierto = false;
+                    this._modoVista = 'frase';
+                    return;
+                }
+
+                const historiasConFrases = [];
+                for (const h of todasHistorias) {
+                    const frasesReales = await db.obtenerFrasesPorHistoria(h.id) || [];
+                    const totalFrases = frasesReales.length;
+                    let completadas = 0;
+                    for (const f of frasesReales) {
+                        const progreso = await db.obtenerProgreso(f.id);
+                        if (progreso && (progreso.estado === 'completada' || progreso.rcn >= 4)) completadas++;
+                    }
+                    const pct = totalFrases > 0 ? Math.round((completadas / totalFrases) * 100) : 0;
+                    historiasConFrases.push({
+                        ...h,
+                        _frasesReales: frasesReales,
+                        _totalFrases: totalFrases,
+                        _completadas: completadas,
+                        _pct: pct,
+                        _esLeida: this._historiasLeidas.has(h.id)
+                    });
+                }
+
+                const historiasPorTema = {};
+                const temasMap = {};
+                for (const h of historiasConFrases) {
+                    const temaId = h.temaId || 'sin_tema';
+                    if (!historiasPorTema[temaId]) historiasPorTema[temaId] = [];
+                    historiasPorTema[temaId].push(h);
+                }
+                for (const temaId of Object.keys(historiasPorTema)) {
+                    if (temaId !== 'sin_tema') {
+                        const tema = await db.obtenerTema(temaId);
+                        temasMap[temaId] = tema?.nombre || `📚 Tema ${Object.keys(temasMap).length + 1}`;
+                    } else {
+                        temasMap[temaId] = '📂 Sin tema asignado';
+                    }
+                }
+
+                const fiabilidad = await vigiaGenerator.calcularFiabilidad(idioma);
+                const totalHistorias = todasHistorias.length;
+                const leidas = this._historiasLeidas.size;
+                const pctLeidas = totalHistorias > 0 ? Math.round((leidas / totalHistorias) * 100) : 0;
+                let totalFrasesReales = 0;
+                for (const h of historiasConFrases) totalFrasesReales += h._totalFrases;
+                
+                let html = `
+                    <div class="libro-lectura-container" style="padding:16px;max-width:100%;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;padding:12px 20px;background:linear-gradient(135deg, var(--primary)06, var(--secondary)06);border-radius:14px;border:2px solid var(--primary)20;">
+                            <div>
+                                <h2 style="font-size:22px;font-weight:800;color:var(--dark);margin:0;">📚 Libro de Lectura</h2>
+                                <p style="font-size:13px;color:var(--gray);margin:4px 0 0;">${totalHistorias} historias · ${this._getNombreIdioma(idioma)}</p>
+                                <div style="display:flex;gap:12px;margin-top:4px;font-size:11px;color:var(--gray-light);flex-wrap:wrap;">
+                                    <span>📝 ${totalFrasesReales} frases</span>
+                                </div>
+                            </div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                                <button class="btn-secondary" onclick="window.UIStudy._volverDelLibro()" style="padding:6px 14px;font-size:12px;background:var(--bg);border:1px solid var(--light);border-radius:6px;cursor:pointer;"><i class="fas fa-arrow-left"></i> Volver</button>
+                                <button class="btn-primary" onclick="window.UIStudy._generarFrasesDesdeLibro()" style="padding:6px 14px;font-size:12px;background:linear-gradient(135deg,#6C5CE7,#A29BFE);color:white;border:none;border-radius:6px;cursor:pointer;${this._generandoFrases ? 'opacity:0.6;cursor:not-allowed;' : ''}" ${this._generandoFrases ? 'disabled' : ''}><i class="fas fa-magic"></i> ${this._generandoFrases ? 'Generando...' : 'Generar Frases'}</button>
+                            </div>
+                        </div>
+                        <div style="background:var(--white);border-radius:12px;padding:12px 18px;margin-bottom:16px;border:2px solid var(--primary)20;box-shadow:var(--shadow);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="font-size:20px;">📖</span>
+                                    <div>
+                                        <div style="font-size:14px;font-weight:600;color:var(--dark);">Progreso de Lectura <span class="historias-leidas-contador" style="font-size:12px;font-weight:400;color:var(--gray);">${leidas} leídas</span></div>
+                                        <div style="font-size:12px;color:var(--gray);">${totalHistorias} historias en total</div>
+                                    </div>
+                                </div>
+                                <div style="text-align:center;min-width:80px;">
+                                    <div style="font-size:28px;font-weight:800;color:${pctLeidas >= 80 ? 'var(--success)' : pctLeidas >= 40 ? 'var(--warning)' : 'var(--danger)'};">${pctLeidas}%</div>
+                                    <div style="font-size:9px;color:var(--gray-light);">${pctLeidas >= 80 ? '🏆 Excelente' : pctLeidas >= 40 ? '📖 Buen progreso' : '🌱 Empieza a leer'}</div>
+                                </div>
+                            </div>
+                            <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:8px;">
+                                <div class="historias-leidas-progreso" style="height:100%;width:${pctLeidas}%;background:${pctLeidas >= 80 ? 'linear-gradient(90deg, #6C5CE7, #00CEC9)' : 'linear-gradient(90deg, #6C5CE7, #A29BFE)'};border-radius:3px;transition:width 0.6s ease;"></div>
+                            </div>
+                        </div>
+                        <div style="background:var(--white);border-radius:12px;padding:14px 18px;margin-bottom:16px;border:2px solid ${this._getColorFiabilidad(fiabilidad.fiabilidad)};box-shadow:var(--shadow);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                                <div style="display:flex;align-items:center;gap:10px;">
+                                    <span style="font-size:24px;">🧠</span>
+                                    <div>
+                                        <div style="font-size:14px;font-weight:600;color:var(--dark);">Calidad del Generador</div>
+                                        <div style="font-size:12px;color:var(--gray);">${fiabilidad.nivelConfianza}</div>
+                                    </div>
+                                </div>
+                                <div style="text-align:center;min-width:80px;">
+                                    <div style="font-size:28px;font-weight:800;color:${this._getColorFiabilidad(fiabilidad.fiabilidad)};">${fiabilidad.fiabilidad}%</div>
+                                    <div style="font-size:9px;color:var(--gray-light);">${fiabilidad.fiabilidad >= 40 ? '✅ Listo para generar' : '⏳ Añade más contenido'}</div>
+                                </div>
+                            </div>
+                            <div style="height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:8px;">
+                                <div style="height:100%;width:${fiabilidad.fiabilidad}%;background:${this._getColorFiabilidad(fiabilidad.fiabilidad)};border-radius:3px;transition:width 1s ease;"></div>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                `;
+
+                const temasOrdenados = Object.keys(historiasPorTema).sort((a, b) => {
+                    const nombreA = temasMap[a] || '';
+                    const nombreB = temasMap[b] || '';
+                    return nombreA.localeCompare(nombreB);
+                });
+
+                for (const temaId of temasOrdenados) {
+                    const historias = historiasPorTema[temaId] || [];
+                    const nombreTema = temasMap[temaId] || '📚 Tema sin nombre';
+                    let totalFrasesTema = 0, completadasTema = 0;
+                    for (const h of historias) {
+                        totalFrasesTema += h._totalFrases;
+                        completadasTema += h._completadas;
+                    }
+                    const pctTema = totalFrasesTema > 0 ? Math.round((completadasTema / totalFrasesTema) * 100) : 0;
+                    const leidasTema = historias.filter(h => this._historiasLeidas.has(h.id)).length;
+                    const pctLeidasTema = historias.length > 0 ? Math.round((leidasTema / historias.length) * 100) : 0;
+                    let nombreMostrar = nombreTema;
+                    if (nombreTema === '📚 Tema sin nombre' || nombreTema === '📂 Sin tema asignado' || nombreTema.startsWith('📚 Tema ')) {
+                        if (historias.length > 0 && historias[0].titulo) nombreMostrar = `📚 ${historias[0].titulo.substring(0, 25)}...`;
+                        else nombreMostrar = `📚 Historia(s) ${temasOrdenados.indexOf(temaId) + 1}`;
+                    }
+                    html += `
+                        <div style="background:var(--white);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow);border-left:4px solid ${pctTema >= 80 ? 'var(--success)' : pctTema >= 40 ? 'var(--primary)' : 'var(--light)'};">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:4px;">
+                                <div>
+                                    <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0;">${nombreMostrar}</h3>
+                                    <span style="font-size:12px;color:var(--gray-light);">${historias.length} historias · ${totalFrasesTema} frases · ${leidasTema} leídas</span>
+                                    <span style="font-size:11px;color:var(--success);margin-left:8px;">${pctTema}% completado</span>
+                                </div>
+                                <button class="btn-primary" onclick="window.UIStudy._estudiarTemaDesdeLibro('${temaId}')" style="padding:4px 14px;font-size:11px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;"><i class="fas fa-play"></i> Estudiar Todo</button>
+                            </div>
+                            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;">
+                    `;
+
+                    for (const historia of historias) {
+                        const totalFrases = historia._totalFrases || 0;
+                        const pct = historia._pct || 0;
+                        const esLeida = historia._esLeida || false;
+                        const tituloMostrar = historia.titulo || '📖 Historia sin título';
+                        html += `
+                            <div class="historia-card" data-historia-id="${historia.id}" style="background: ${esLeida ? 'rgba(0, 184, 148, 0.05)' : 'var(--white)'};border-radius: 8px;padding: 10px 12px;border: 1px solid ${esLeida ? 'var(--success)' : 'var(--light)'};border-left: 4px solid ${esLeida ? 'var(--success)' : 'var(--light)'};transition: all 0.3s ease;position: relative;">
+                                <div style="display:flex;justify-content:space-between;align-items:start;gap:6px;">
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:14px;font-weight:600;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${tituloMostrar}">${tituloMostrar}</div>
+                                        <div style="display:flex;gap:8px;font-size:11px;color:var(--gray-light);flex-wrap:wrap;align-items:center;margin-top:2px;">
+                                            <span>${totalFrases} frases</span>
+                                            <span>${pct}% completado</span>
+                                            <span class="historia-leida-tag" style="display:${esLeida ? 'inline-block' : 'none'};font-size:10px;color:var(--success);font-weight:600;">✅ Leída</span>
+                                        </div>
+                                        <div style="height:3px;background:var(--bg);border-radius:2px;overflow:hidden;margin-top:4px;max-width:120px;">
+                                            <div class="historia-progreso" style="height:100%;width:${esLeida ? 100 : pct}%;background:${esLeida ? 'var(--success)' : 'var(--primary)'};border-radius:2px;transition:width 0.5s ease;"></div>
+                                        </div>
+                                    </div>
+                                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                                        <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:2px 8px;background:${esLeida ? 'var(--success)08' : 'var(--bg)'};border-radius:8px;border:1px solid ${esLeida ? 'var(--success)' : 'var(--light)'};transition:all 0.3s;" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='${esLeida ? 'var(--success)' : 'var(--light)'}'">
+                                            <input type="checkbox" class="historia-checkbox-input" ${esLeida ? 'checked' : ''} onchange="window.UIStudy._toggleHistoriaLeida(${historia.id}, this.checked)" style="width:14px;height:14px;cursor:pointer;">
+                                            <span class="historia-leida-badge" style="font-size:10px;font-weight:600;color:${esLeida ? 'var(--success)' : 'var(--gray)'};">${esLeida ? '✅ Leída' : '📖 No leída'}</span>
+                                        </label>
+                                        <div style="display:flex;gap:4px;">
+                                            <button class="btn-secondary" onclick="window.UIStudy._leerHistoriaCompletaDesdeLibro(${historia.id})" style="padding:2px 10px;font-size:10px;background:var(--secondary);color:white;border:none;border-radius:4px;cursor:pointer;"><i class="fas fa-book"></i> Leer</button>
+                                            <button class="btn-secondary" onclick="window.UIStudy._estudiarHistoriaDesdeLibro(${historia.id})" style="padding:2px 10px;font-size:10px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;"><i class="fas fa-play"></i> Estudiar</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    html += `</div></div>`;
+                }
+
+                html += `</div></div>`;
+                const container = document.getElementById('cardContainer');
+                if (container) {
+                    container.innerHTML = html;
+                    this._modoVista = 'libro';
+                    this._actualizarContadorHistoriasLeidas();
+                }
+            } catch (e) {
+                console.error('❌ Error abriendo libro de lectura:', e);
+                this.core?.mostrarToast('❌ Error al abrir el libro de lectura', 'error');
+                this._libroAbierto = false;
+                this._modoVista = 'frase';
+            }
+        }
+
+        // ============================================================
+        // VOLVER DEL LIBRO
+        // ============================================================
+
+        _volverDelLibro() {
+            console.log('🔙 Volviendo del libro al estudio');
+            this._cerrandoLibro = true;
+            this._modoVista = 'frase';
+            this._libroAbierto = false;
+            this._estudiandoTemaDesdeLibro = false;
+            try {
+                if (pipeline && pipeline.fraseActual) this._renderizarFraseInteractiva();
+                else if (pipeline && pipeline.frases && pipeline.frases.length > 0) pipeline.cargarFrase(0);
+                else this.mostrarPantallaInicio();
+                if (this.core) this.core.irAModulo('study');
+            } catch (e) {
+                console.error('❌ Error volviendo del libro:', e);
+            }
+            setTimeout(() => { this._cerrandoLibro = false; }, 500);
+        }
+
+        // ============================================================
+        // ESTUDIAR TEMA DESDE LIBRO
+        // ============================================================
+
+        async _estudiarTemaDesdeLibro(temaId) {
+            if (this._cerrandoLibro) return;
+            this._cerrandoLibro = true;
+            this._modoVista = 'frase';
+            this._libroAbierto = false;
+            this._estudiandoTemaDesdeLibro = true;
+            this._temaIdDesdeLibro = temaId;
+            
+            try {
+                const tema = await db.obtenerTema(temaId);
+                if (!tema) {
+                    this.core?.mostrarToast('❌ Tema no encontrado', 'error');
+                    this._cerrandoLibro = false;
+                    this._estudiandoTemaDesdeLibro = false;
+                    return;
+                }
+                this.core?.mostrarToast(`📖 Cargando tema "${tema.nombre}"...`, 'info');
+                pipeline._estudiandoTema = true;
+                pipeline._temaActual = temaId;
+                this._origenHistoriaActual = 'tema';
+                await pipeline.estudiarTema(temaId);
+                setTimeout(async () => { await this._verificarProgresoTema(); }, 500);
+                setTimeout(() => {
+                    this._modoVista = 'frase';
+                    this._libroAbierto = false;
+                    this._renderizarFraseInteractiva();
+                    if (this.core) this.core.irAModulo('study');
+                    this.core?.mostrarToast('✅ Tema cargado correctamente', 'success');
+                    this._cerrandoLibro = false;
+                    this._estudiandoTemaDesdeLibro = false;
+                }, 300);
+            } catch (error) {
+                console.error('❌ Error estudiando tema:', error);
+                this.core?.mostrarToast('❌ Error al cargar el tema', 'error');
+                this._modoVista = 'libro';
+                this._libroAbierto = true;
+                this._cerrandoLibro = false;
+                this._estudiandoTemaDesdeLibro = false;
+                this._abrirLibroLectura();
+            }
+        }
+
+        // ============================================================
+        // ESTUDIAR HISTORIA DESDE LIBRO
+        // ============================================================
+
+        async _estudiarHistoriaDesdeLibro(historiaId) {
+            if (this._cerrandoLibro) return;
+            this._cerrandoLibro = true;
+            this._modoVista = 'frase';
+            this._libroAbierto = false;
+            
+            try {
+                const historia = await db.get('historias', historiaId);
+                if (historia && historia.temaId) {
+                    this._temaIdDesdeLibro = historia.temaId;
+                    this._temaIdDesdeHistoria = historia.temaId;
+                    pipeline._estudiandoTema = true;
+                    pipeline._temaActual = historia.temaId;
+                }
+                this.core?.mostrarToast('📖 Cargando historia...', 'info');
+                const esOnda = historia && historia._esOnda === true;
+                const esCruzada = historia && historia._esOndaCruzada === true;
+                const esTono = historia && historia._esTono === true;
+                let origen = 'tema';
+                if (esCruzada) origen = 'cruzada';
+                else if (esTono) origen = 'tonos';
+                else if (esOnda) origen = 'elipse';
+                this._origenHistoriaActual = origen;
+                console.log(`📖 Estudiando historia "${historia?.titulo}" con origen: ${origen}`);
+                await pipeline.estudiarHistoria(historiaId, origen);
+                setTimeout(async () => { await this._verificarProgresoTema(); }, 500);
+                setTimeout(() => {
+                    this._modoVista = 'frase';
+                    this._libroAbierto = false;
+                    this._renderizarFraseInteractiva();
+                    if (this.core) this.core.irAModulo('study');
+                    this.core?.mostrarToast('✅ Historia cargada correctamente', 'success');
+                    this._cerrandoLibro = false;
+                }, 300);
+            } catch (error) {
+                console.error('❌ Error estudiando historia:', error);
+                this.core?.mostrarToast('❌ Error al cargar la historia', 'error');
+                this._modoVista = 'libro';
+                this._libroAbierto = true;
+                this._cerrandoLibro = false;
+                this._abrirLibroLectura();
+            }
+        }
+
+        // ============================================================
+        // LEER HISTORIA COMPLETA DESDE LIBRO
+        // ============================================================
+
+        async _leerHistoriaCompletaDesdeLibro(historiaId) {
+            try {
+                const historia = await db.get('historias', historiaId);
+                if (!historia) {
+                    this.core?.mostrarToast('❌ Historia no encontrada', 'error');
+                    return;
+                }
+                const frases = await db.obtenerFrasesPorHistoria(historiaId);
+                this._historiaActual = frases;
+                this._historiaTitulo = historia.titulo || 'Historia sin título';
+                this._historiaIdActual = historiaId;
+                this._modoVista = 'historia_completa';
+                await this._renderizarHistoriaCompletaDesdeLibro();
+            } catch (e) {
+                console.error('❌ Error leyendo historia:', e);
+                this.core?.mostrarToast('❌ Error al leer la historia', 'error');
+            }
+        }
+
+        // ============================================================
+        // RENDERIZAR HISTORIA COMPLETA DESDE LIBRO
+        // ============================================================
+
+        async _renderizarHistoriaCompletaDesdeLibro() {
+            const container = document.getElementById('cardContainer');
+            if (!container) return;
+            const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+            const esJeroglifico = this._esJeroglifico(idioma);
+            
+            try {
+                const frasesReales = await db.obtenerFrasesPorHistoria(this._historiaIdActual);
+                this._historiaActual = frasesReales;
+                let html = `
+                    <div style="padding:16px;max-width:900px;margin:0 auto;">
+                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                            <button class="btn-secondary" onclick="window.UIStudy._volverDelLibro()" style="padding:6px 14px;font-size:13px;"><i class="fas fa-arrow-left"></i> Volver al libro</button>
+                            <h2 style="font-size:22px;font-weight:800;color:var(--dark);margin:0;flex:1;">📖 ${this._historiaTitulo}</h2>
+                            <span style="font-size:12px;color:var(--gray-light);">${this._historiaActual.length} frases</span>
+                            <button class="btn-primary" onclick="window.UIStudy._estudiarHistoriaDesdeLibro(${this._historiaIdActual})" style="padding:4px 12px;font-size:11px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;"><i class="fas fa-play"></i> Estudiar todo</button>
+                            <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:4px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--light);">
+                                <input type="checkbox" ${this._historiasLeidas.has(this._historiaIdActual) ? 'checked' : ''} onchange="window.UIStudy._toggleHistoriaLeida(${this._historiaIdActual}, this.checked)" style="width:14px;height:14px;cursor:pointer;">
+                                <span>✅ Marcar como leída</span>
+                            </label>
+                        </div>
+                `;
+
+                let numFrase = 0;
+                for (const frase of this._historiaActual) {
+                    numFrase++;
+                    const transcripcion = await this._obtenerTranscripcionFrase(frase);
+                    const esFavorita = await gestorFavoritos.estaEnFavoritos('frase', frase.id);
+                    const nivelReal = this._obtenerNivelRealUsuario();
+                    let palabrasHtml = '';
+                    try {
+                        const palabrasCompletas = await this._obtenerPalabrasCompletas(frase);
+                        if (palabrasCompletas.length > 0) {
+                            palabrasHtml = `
+                                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;padding-top:8px;border-top:1px solid var(--light);">
+                                    ${palabrasCompletas.map(p => {
+                                        const texto = p.palabra || p.hanzi || '';
+                                        const pinyinPalabra = p.pinyin || '';
+                                        const transcripcionPalabra = p.transcripcion || '';
+                                        const significado = p.significado || '';
+                                        return `
+                                            <span style="display:inline-flex;flex-direction:column;align-items:center;padding:2px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--light);cursor:pointer;font-size:12px;"
+                                                  onclick="window.UIStudy._abrirModalGuardarPalabra('${texto.replace(/'/g, "\\'")}', '${(esJeroglifico ? pinyinPalabra : transcripcionPalabra).replace(/'/g, "\\'")}', '${significado.replace(/'/g, "\\'")}', '${(p.familia || 'General').replace(/'/g, "\\'")}', '${idioma}', '${nivelReal}')"
+                                                  onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" 
+                                                  onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+                                                <span style="font-weight:600;font-size:14px;">${texto}</span>
+                                                ${esJeroglifico ? (pinyinPalabra ? `<span style="font-size:9px;color:var(--gray-light);">${pinyinPalabra}</span>` : '') : (transcripcionPalabra ? `<span style="font-size:9px;color:var(--gray-light);">${transcripcionPalabra}</span>` : '')}
+                                                <span style="font-size:8px;color:var(--primary);">⭐ Guardar</span>
+                                            </span>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            `;
+                        }
+                    } catch (e) {}
+                    
+                    html += `
+                        <div style="background:var(--white);border-radius:10px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--shadow);border-left:4px solid var(--primary);">
+                            <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;">
+                                <div style="flex:1;min-width:200px;">
+                                    <div style="display:flex;align-items:center;gap:6px;">
+                                        <span style="font-size:12px;font-weight:600;color:var(--gray-light);">${numFrase}.</span>
+                                        <div style="font-size:18px;font-weight:700;color:var(--dark);">${esJeroglifico ? (frase.segmentacion?.hanzi || frase.original) : frase.original}</div>
+                                    </div>
+                                    ${transcripcion ? `<div style="font-size:15px;color:${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};margin-top:4px;letter-spacing:1px;margin-left:22px;">${esJeroglifico ? '🔊' : '🎤'} ${transcripcion}</div>` : ''}
+                                    <div style="font-size:16px;color:var(--gray);margin-top:4px;margin-left:22px;">→ ${frase.traduccion}</div>
+                                    ${frase.reglaGramatical ? `<div style="font-size:11px;color:var(--primary);margin-top:4px;padding:4px 8px;background:var(--bg);border-radius:4px;display:inline-block;margin-left:22px;">📋 ${frase.reglaGramatical}</div>` : ''}
+                                </div>
+                                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                                    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;padding:4px 8px;background:var(--bg);border-radius:6px;border:1px solid var(--light);">
+                                        <input type="checkbox" ${esFavorita ? 'checked' : ''} onchange="window.UIStudy._toggleFraseFavorita(${frase.id}, this.checked)" style="width:14px;height:14px;cursor:pointer;">
+                                        <span>⭐</span>
+                                    </label>
+                                    <button class="btn-secondary" onclick="window.UIStudy._estudiarFraseDesdeHistoria(${frase.id})" style="padding:2px 10px;font-size:10px;background:var(--primary);color:white;border:none;border-radius:4px;cursor:pointer;"><i class="fas fa-play"></i> Estudiar</button>
+                                </div>
+                            </div>
+                            ${palabrasHtml}
+                        </div>
+                    `;
+                }
+
+                html += `
+                        <div style="display:flex;gap:10px;margin-top:16px;justify-content:center;flex-wrap:wrap;">
+                            <button class="btn-secondary" onclick="window.UIStudy._volverDelLibro()" style="padding:8px 20px;font-size:13px;"><i class="fas fa-arrow-left"></i> Volver al libro</button>
+                            <button class="btn-primary" onclick="window.UIStudy._estudiarHistoriaDesdeLibro(${this._historiaIdActual})" style="padding:8px 20px;font-size:13px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;"><i class="fas fa-play"></i> Estudiar toda la historia</button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = html;
+            } catch (e) {
+                console.error('❌ Error renderizando historia completa:', e);
+                container.innerHTML = `
+                    <div style="text-align:center;padding:40px;color:var(--gray);">
+                        <i class="fas fa-exclamation-triangle" style="font-size:48px;color:var(--danger);display:block;margin-bottom:16px;"></i>
+                        <p style="font-size:16px;font-weight:500;">Error al cargar la historia</p>
+                        <button class="btn-primary" onclick="window.UIStudy._volverDelLibro()" style="margin-top:12px;"><i class="fas fa-arrow-left"></i> Volver</button>
+                    </div>
+                `;
+            }
+        }
+
+        // ============================================================
+        // CERRAR HISTORIA COMPLETA
+        // ============================================================
+
+        _cerrarHistoriaCompleta() { this._volverDelLibro(); }
+
+        // ============================================================
+        // ESTUDIAR FRASE DESDE HISTORIA
+        // ============================================================
+
+        async _estudiarFraseDesdeHistoria(fraseId) {
+            try {
+                const frases = await db.obtenerFrases();
+                const frase = frases.find(f => f.id === fraseId);
+                if (!frase) {
+                    this.core?.mostrarToast('❌ Frase no encontrada', 'error');
+                    return;
+                }
+                this._cerrandoLibro = true;
+                this._modoVista = 'frase';
+                this._libroAbierto = false;
+                if (frase.historiaId) {
+                    const historia = await db.get('historias', frase.historiaId);
+                    if (historia && historia.temaId) this._temaIdDesdeHistoria = historia.temaId;
+                }
+                pipeline.frases = [frase];
+                pipeline.indiceFrase = 0;
+                await pipeline.cargarFrase(0);
+                if (this.core) this.core.irAModulo('study');
+                setTimeout(() => { this._cerrandoLibro = false; }, 300);
+            } catch (e) {
+                console.error('❌ Error estudiando frase desde historia:', e);
+                this.core?.mostrarToast('❌ Error al cargar la frase', 'error');
+            }
+        }
+
+        // ============================================================
+        // GENERAR FRASES DESDE LIBRO
+        // ============================================================
+
+        async _generarFrasesDesdeLibro() {
+            if (this._generandoFrases) {
+                this.core?.mostrarToast('⏳ Ya hay una generación en curso', 'warning');
+                return;
+            }
+            const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+            const nivel = this._obtenerNivelRealUsuario();
+            const fiabilidad = await vigiaGenerator.calcularFiabilidad(idioma);
+            if (fiabilidad.fiabilidad < 40) {
+                this.core?.mostrarToast(`📚 El generador necesita más datos (${fiabilidad.fiabilidad}%). Añade más historias.`, 'warning');
+                return;
+            }
+            this._generandoFrases = true;
+            this._frasesGeneradas = [];
+            this._frasesTraducidas = {};
+            this._frasesGuardadas = {};
+            this.core?.mostrarToast('🧠 Generando frases con Vigía...', 'info');
+            try {
+                const resultado = await vigiaGenerator.generarFrases(idioma, 5, nivel, 'Generado desde Libro');
+                if (resultado.exito && resultado.frases.length > 0) {
+                    this._frasesGeneradas = resultado.frases;
+                    this._mostrarModalFrasesGeneradas(resultado.frases, resultado.fiabilidad);
+                } else {
+                    this.core?.mostrarToast(resultado.mensaje || '❌ No se pudieron generar frases', 'error');
+                }
+            } catch (error) {
+                console.error('❌ Error generando frases:', error);
+                this.core?.mostrarToast('❌ Error: ' + error.message, 'error');
+            } finally {
+                this._generandoFrases = false;
+            }
+        }
+
+        // ============================================================
+        // MODAL MEJORADO PARA FRASES GENERADAS
+        // ============================================================
+
+        _mostrarModalFrasesGeneradas(frases, fiabilidad) {
+            const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+            const nombreIdioma = this._getNombreIdioma(idioma);
+            const esJeroglifico = this._esJeroglifico(idioma);
+            const hasTraduccion = frases.some(f => f.traduccion && f.traduccion.trim() !== '');
+            
+            let html = `
+                <div style="background:linear-gradient(135deg, var(--primary)06, var(--secondary)06);border-radius:14px;padding:16px 20px;margin-bottom:16px;border:2px solid var(--primary)20;">
+                    <div>
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-size:28px;">🧠</span>
+                            <div>
+                                <h3 style="font-size:18px;font-weight:700;color:var(--dark);margin:0;">Frases Generadas <span style="font-size:13px;font-weight:400;color:var(--gray);">(${frases.length} nuevas)</span></h3>
+                                <p style="font-size:12px;color:var(--gray);margin:2px 0 0;">${nombreIdioma} · Nivel ${this._obtenerNivelRealUsuario()} · Fiabilidad: ${fiabilidad.fiabilidad}% ${!hasTraduccion ? ' · ⏳ Traducción pendiente' : ''} ${esJeroglifico ? ' · 🀄 Jeroglífico' : ' · 🔤 Alfabético'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn-success" onclick="window.UIStudy._guardarTodasFrasesGeneradas()" style="padding:8px 20px;font-size:13px;background:linear-gradient(135deg,#00B894,#55EFC4);color:white;border:none;border-radius:8px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.02)';this.style.boxShadow='0 4px 20px rgba(0,184,148,0.3)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'"><i class="fas fa-save"></i> Guardar Todas</button>
+                        <button class="btn-secondary" onclick="window.UIStudy._cerrarModalFrasesGeneradas()" style="padding:8px 20px;font-size:13px;background:var(--bg);border:1px solid var(--light);border-radius:8px;cursor:pointer;"><i class="fas fa-times"></i> Cerrar</button>
+                    </div>
+                </div>
+            `;
+
+            for (let i = 0; i < frases.length; i++) {
+                const f = frases[i];
+                const idx = i;
+                const tieneTraduccion = f.traduccion && f.traduccion.trim() !== '';
+                const estaTraducida = this._frasesTraducidas[idx] === true;
+                const estaGuardada = this._frasesGuardadas[idx] === true;
+                let transcripcionMostrar = '';
+                if (esJeroglifico) transcripcionMostrar = f.pinyinCompleto || '';
+                else transcripcionMostrar = f.transcripcion || '';
+                html += `
+                    <div style="background:var(--white);border-radius:12px;padding:16px 20px;margin-bottom:12px;border:2px solid ${estaGuardada ? 'var(--success)' : estaTraducida ? 'var(--secondary)' : 'var(--light)'};box-shadow:${estaGuardada ? '0 4px 20px rgba(0,184,148,0.15)' : 'var(--shadow)'};transition:all 0.3s ease;position:relative;">
+                        ${estaGuardada ? `<div style="position:absolute;top:-8px;right:16px;background:var(--success);color:white;padding:2px 14px;border-radius:12px;font-size:10px;font-weight:600;">✅ Guardada</div>` : ''}
+                        <div style="display:flex;justify-content:space-between;align-items:start;flex-wrap:wrap;gap:8px;">
+                            <div style="flex:1;min-width:200px;">
+                                <div style="font-size:20px;font-weight:700;color:var(--dark);">${f.original}</div>
+                                ${transcripcionMostrar ? `<div style="font-size:14px;color:${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};margin-top:2px;letter-spacing:1px;font-weight:500;">${esJeroglifico ? '🔊' : '🎤'} ${transcripcionMostrar}</div>` : `<div style="font-size:12px;color:var(--danger);margin-top:2px;">⚠️ ${esJeroglifico ? 'Sin pinyin' : 'Sin transcripción fonética'}</div>`}
+                                <div style="font-size:15px;color:var(--gray);margin-top:4px;">${tieneTraduccion ? `→ ${f.traduccion}` : estaTraducida ? `→ ${f.traduccion || 'Traducción obtenida'}` : '⏳ Traducción pendiente'}</div>
+                                ${f.reglaGramatical && !f.reglaGramatical.startsWith('[') ? `<div style="font-size:11px;color:var(--primary);margin-top:4px;padding:2px 10px;background:var(--primary)08;border-radius:4px;display:inline-block;">📋 ${f.reglaGramatical}</div>` : ''}
+                            </div>
+                            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                                ${!tieneTraduccion && !estaTraducida ? `<button class="btn-secondary" onclick="window.UIStudy._traducirFraseGenerada(${idx})" style="padding:6px 14px;font-size:11px;background:linear-gradient(135deg,#6C5CE7,#A29BFE);color:white;border:none;border-radius:6px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='none'" ${this._traduciendoFrase ? 'disabled' : ''}><i class="fas fa-language"></i> Traducir con Groq</button>` : ''}
+                                ${!estaGuardada ? `<button class="btn-success" onclick="window.UIStudy._guardarFraseGenerada(${idx})" style="padding:6px 14px;font-size:11px;background:linear-gradient(135deg,#00B894,#55EFC4);color:white;border:none;border-radius:6px;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='none'" ${!tieneTraduccion && !estaTraducida ? 'disabled title="Traduce la frase primero"' : ''}><i class="fas fa-save"></i> Guardar</button>` : ''}
+                                <span style="font-size:10px;color:var(--gray-light);">${i + 1}/${frases.length}</span>
+                            </div>
+                        </div>
+                        ${estaTraducida && !tieneTraduccion ? `<div style="margin-top:8px;font-size:11px;color:var(--success);background:var(--success)08;padding:4px 12px;border-radius:6px;display:inline-block;">✅ Traducido con Groq</div>` : ''}
+                    </div>
+                `;
+            }
+
+            const totalGuardadas = Object.values(this._frasesGuardadas).filter(v => v).length;
+            const totalTraducidas = Object.values(this._frasesTraducidas).filter(v => v).length;
+            html += `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--light);font-size:12px;color:var(--gray-light);flex-wrap:wrap;gap:8px;">
+                    <div><span>📊 ${frases.length} frases generadas</span><span style="margin-left:12px;">✅ ${totalGuardadas} guardadas</span><span style="margin-left:12px;">🔄 ${totalTraducidas} traducidas</span><span style="margin-left:12px;">${esJeroglifico ? '🀄' : '🔤'} ${totalTraducidas > 0 ? 'Con pinyin/transcripción' : 'Sin transcripción'}</span></div>
+                    <div><span style="font-size:10px;color:var(--gray-light);">💡 Traduce cada frase para obtener también su ${esJeroglifico ? 'pinyin' : 'transcripción fonética'}</span></div>
+                </div>
+            `;
+
+            if (this.core) {
+                this.core.abrirModal('🧠 Frases Generadas');
+                const textarea = document.getElementById('jsonTextarea');
+                if (textarea) {
+                    textarea.style.display = 'none';
+                    let modalBody = textarea.parentElement;
+                    let container = document.getElementById('frasesGeneradasContainer');
+                    if (!container) {
+                        container = document.createElement('div');
+                        container.id = 'frasesGeneradasContainer';
+                        container.style.cssText = `max-height:70vh;overflow-y:auto;padding:4px 8px;`;
+                        modalBody.appendChild(container);
+                    }
+                    container.innerHTML = html;
+                    container.style.display = 'block';
+                }
+            }
+        }
+
+        // ============================================================
+        // TRADUCIR FRASE GENERADA CON GROQ
+        // ============================================================
+
+        async _traducirFraseGenerada(idx) {
+            if (this._traduciendoFrase) {
+                this.core?.mostrarToast('⏳ Ya hay una traducción en curso', 'warning');
+                return;
+            }
+            const frase = this._frasesGeneradas[idx];
+            if (!frase) { this.core?.mostrarToast('❌ Frase no encontrada', 'error'); return; }
+            if (frase.traduccion && frase.traduccion.trim() !== '') {
+                this.core?.mostrarToast('ℹ️ Esta frase ya tiene traducción', 'info');
+                return;
+            }
+            const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+            const idiomaNativo = this._idiomaNativo;
+            const esJeroglifico = this._esJeroglifico(idioma);
+            this._traduciendoFrase = true;
+            this.core?.mostrarToast(`🔍 Traduciendo "${frase.original}" con Groq...`, 'info');
+            try {
+                if (!window.vigia || !window.vigia.enLinea) throw new Error('Vigía no está conectado.');
+                let prompt = `Eres un traductor experto en el idioma ${idioma}. Traduce la siguiente frase del ${idioma} al ${idiomaNativo}: FRASE: "${frase.original}" REGLAS: 1. La traducción debe ser NATURAL y COTIDIANA en ${idiomaNativo}. 2. Mantén el significado exacto. 3. No añadas explicaciones, solo la traducción. 4. Responde SOLO con la traducción, sin comillas ni texto adicional.`;
+                let pinyinObtenido = '';
+                if (esJeroglifico) {
+                    prompt = `Eres un experto en el idioma ${idioma} y en su sistema fonético. Traduce la siguiente frase del ${idioma} al ${idiomaNativo} y proporciona su PINYIN con tonos: FRASE: "${frase.original}" Responde SOLO en formato JSON: { "traduccion": "traducción_natural_al_${idiomaNativo}", "pinyin": "pinyin_con_tonos_de_la_frase_completa" }`;
+                    const resultado = await window.vigia._consultarGroq(prompt, 'json');
+                    if (resultado && resultado.traduccion && resultado.traduccion.trim().length > 0) {
+                        this._frasesGeneradas[idx].traduccion = resultado.traduccion.trim();
+                        this._frasesGeneradas[idx].pinyinCompleto = resultado.pinyin || '';
+                        this._frasesTraducidas[idx] = true;
+                        this.core?.mostrarToast(`✅ Traducción obtenida: "${resultado.traduccion.trim()}"${resultado.pinyin ? ` · 🔊 ${resultado.pinyin}` : ''}`, 'success');
+                        this._actualizarModalFrasesGeneradas();
+                        this._traduciendoFrase = false;
+                        return;
+                    }
+                    throw new Error('No se pudo obtener la traducción con pinyin');
+                }
+                const traduccion = await window.vigia._consultarGroq(prompt, 'text');
+                if (traduccion && traduccion.trim().length > 0) {
+                    this._frasesGeneradas[idx].traduccion = traduccion.trim();
+                    this._frasesTraducidas[idx] = true;
+                    this.core?.mostrarToast(`✅ Traducción obtenida: "${traduccion.trim()}"`, 'success');
+                    this._actualizarModalFrasesGeneradas();
+                } else throw new Error('No se pudo obtener la traducción');
+            } catch (error) {
+                console.error('❌ Error traduciendo:', error);
+                this.core?.mostrarToast(`❌ Error: ${error.message}`, 'error');
+            } finally { this._traduciendoFrase = false; }
+        }
+
+        // ============================================================
+        // GUARDAR FRASE GENERADA INDIVIDUAL
+        // ============================================================
+
+        async _guardarFraseGenerada(idx) {
+            const frase = this._frasesGeneradas[idx];
+            if (!frase) { this.core?.mostrarToast('❌ Frase no encontrada', 'error'); return; }
+            if (this._frasesGuardadas[idx]) { this.core?.mostrarToast('ℹ️ Esta frase ya está guardada', 'info'); return; }
+            if (!frase.traduccion || frase.traduccion.trim() === '') {
+                this.core?.mostrarToast('⚠️ Primero traduce la frase con el botón "Traducir con Groq"', 'warning');
+                return;
+            }
+            this.core?.mostrarToast('💾 Guardando frase...', 'info');
+            try {
+                const idioma = gestorIdiomas.getIdiomaActivo() || 'es';
+                const nivel = this._obtenerNivelRealUsuario();
+                const esJeroglifico = this._esJeroglifico(idioma);
+                const frasesExistentes = await db.obtenerFrasesPorIdioma(idioma);
+                const existe = frasesExistentes.some(f => f.original === frase.original && f.idioma === idioma);
+                if (existe) {
+                    this.core?.mostrarToast('ℹ️ Esta frase ya existe en la base de datos', 'info');
+                    this._frasesGuardadas[idx] = true;
+                    this._actualizarModalFrasesGeneradas();
+                    return;
+                }
+                const fraseObj = {
+                    original: frase.original, traduccion: frase.traduccion,
+                    idioma: idioma, nivel: nivel, esJeroglifico: esJeroglifico,
+                    pinyinCompleto: frase.pinyinCompleto || '', transcripcion: frase.transcripcion || '',
+                    reglaGramatical: frase.reglaGramatical || null,
+                    explicacionGramatical: frase.explicacionGramatical || null,
+                    tipoRegla: frase.tipoRegla || null,
+                    familiaSemantica: 'Generadas por IA',
+                    palabras: [], activa: true, rg: 0, rcn: 0,
+                    neuroData: { exposiciones: 0, aciertosConsecutivos: 0, fallosConsecutivos: 0, nivelConfianza: 0.5, ultimaActivacion: Date.now(), consolidacion: 0 }
+                };
+                const id = await db.guardarFrase(fraseObj);
+                if (id) {
+                    this._frasesGuardadas[idx] = true;
+                    this.core?.mostrarToast(`✅ Frase "${frase.original}" guardada correctamente`, 'success');
+                    if (window.gestorFavoritos) {
+                        await window.gestorFavoritos.añadirFrase(id);
+                        await window.gestorFavoritos.añadirFraseAGrupo(id, `📚 Nivel ${nivel}`);
+                        await window.gestorFavoritos.añadirFraseAGrupo(id, '🧠 Generadas por IA');
+                    }
+                    this._actualizarModalFrasesGeneradas();
+                    if (window.UIDashboard) window.UIDashboard._cargarDashboardInicial(this.core);
+                } else throw new Error('No se pudo guardar la frase');
+            } catch (error) {
+                console.error('❌ Error guardando frase:', error);
+                this.core?.mostrarToast(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // ============================================================
+        // GUARDAR TODAS LAS FRASES GENERADAS
+        // ============================================================
+
+        async _guardarTodasFrasesGeneradas() {
+            let guardadas = 0, yaExistentes = 0, sinTraduccion = 0;
+            const frases = this._frasesGeneradas;
+            for (let i = 0; i < frases.length; i++) {
+                const frase = frases[i];
+                if (!frase.traduccion || frase.traduccion.trim() === '') { sinTraduccion++; continue; }
+                if (this._frasesGuardadas[i]) { yaExistentes++; continue; }
+                await this._guardarFraseGenerada(i);
+                guardadas++;
+            }
+            this.core?.mostrarToast(`✅ ${guardadas} frases guardadas${sinTraduccion > 0 ? `, ${sinTraduccion} sin traducción` : ''}${yaExistentes > 0 ? `, ${yaExistentes} ya existentes` : ''}`, 'success');
+            this._actualizarModalFrasesGeneradas();
+        }
+
+        // ============================================================
+        // ACTUALIZAR MODAL DE FRASES GENERADAS
+        // ============================================================
+
+        _actualizarModalFrasesGeneradas() {
+            this._mostrarModalFrasesGeneradas(this._frasesGeneradas, { fiabilidad: 70, nivelConfianza: '🟢 Bueno' });
+        }
+
+        // ============================================================
+        // CERRAR MODAL DE FRASES GENERADAS
+        // ============================================================
+
+        _cerrarModalFrasesGeneradas() {
+            if (this.core) {
+                this.core.cerrarModal();
+                const container = document.getElementById('frasesGeneradasContainer');
+                if (container) container.remove();
+                const textarea = document.getElementById('jsonTextarea');
+                if (textarea) textarea.style.display = 'block';
+            }
+        }
+
+        // ============================================================
+        // OBTENER PALABRAS COMPLETAS
+        // ============================================================
+
+        async _obtenerPalabrasCompletas(frase) {
+            if (!frase || !frase.palabras || frase.palabras.length === 0) return [];
+            const idioma = frase.idioma || pipeline.idiomaObjetivo || 'es';
+            const palabrasCompletas = [];
+            const idsResueltos = new Set();
+            for (const p of frase.palabras) {
+                let palabraObj = null;
+                if (p && typeof p === 'object' && p.id && typeof p.id === 'number') {
+                    try { palabraObj = await db.get('palabras', p.id); } catch (e) {}
+                    if (!palabraObj) palabraObj = p;
+                } else if (typeof p === 'number' && p > 0) {
+                    try { palabraObj = await db.get('palabras', p); } catch (e) {}
+                } else if (typeof p === 'string') {
+                    const numId = parseInt(p);
+                    if (!isNaN(numId) && numId > 0) {
+                        try { palabraObj = await db.get('palabras', numId); } catch (e) {}
+                    }
+                    if (!palabraObj) {
+                        const todasPalabras = await db.obtenerPalabrasPorIdioma(idioma);
+                        palabraObj = todasPalabras.find(w => (w.palabra || w.hanzi || '').toLowerCase() === p.toLowerCase().trim());
+                    }
+                    if (!palabraObj) {
+                        palabraObj = { palabra: p, hanzi: this._esJeroglifico(idioma) ? p : '', significado: p, familia: 'sin_clasificar' };
+                    }
+                } else if (p && typeof p === 'object') {
+                    palabraObj = p;
+                }
+                if (palabraObj) {
+                    if (!palabraObj.palabra && palabraObj.hanzi) palabraObj.palabra = palabraObj.hanzi;
+                    if (!palabraObj.hanzi && palabraObj.palabra) palabraObj.hanzi = palabraObj.palabra;
+                    if (!palabraObj.familia) palabraObj.familia = 'sin_clasificar';
+                    if (!palabraObj.significado) palabraObj.significado = palabraObj.palabra || palabraObj.hanzi || '';
+                    palabrasCompletas.push(palabraObj);
+                }
+            }
+            if (palabrasCompletas.length === 0 && this._historiaActual.length > 0) {
+                const historiaFrase = this._historiaActual.find(f => f.id === frase.id);
+                if (historiaFrase && historiaFrase.palabras && historiaFrase.palabras.length > 0) {
+                    for (const p of historiaFrase.palabras) {
+                        if (p && typeof p === 'object' && p.id && typeof p.id === 'number' && !idsResueltos.has(p.id)) {
+                            try { const palabraObj = await db.get('palabras', p.id); if (palabraObj) palabrasCompletas.push(palabraObj); } catch (e) {}
+                        }
+                    }
+                }
+            }
+            return palabrasCompletas;
+        }
+
+        // ============================================================
+        // PANTALLA DE INICIO
+        // ============================================================
+
+        async mostrarPantallaInicio() {
+            const container = document.getElementById('cardContainer');
+            if (!container) return;
+            try {
+                const usuario = await db.getUsuario();
+                const idiomaActivo = gestorIdiomas.getIdiomaActivo() || 'es';
+                const infoIdioma = gestorIdiomas.getInfoIdioma(idiomaActivo);
+                container.innerHTML = '<div class="card" style="max-width:500px;padding:40px 30px;text-align:center;">' +
+                    '<div style="font-size:64px;margin-bottom:16px;">📚</div>' +
+                    '<h2 style="font-size:22px;font-weight:800;margin-bottom:8px;">' + (usuario ? '¡Hola, ' + usuario.nombre + '!' : 'Bienvenido') + '</h2>' +
+                    '<p style="color:var(--gray);font-size:16px;margin-bottom:8px;line-height:1.6;">' + (usuario ? 'Comienza generando o importando historias' : 'Regístrate para comenzar') + '</p>' +
+                    (idiomaActivo ? '<p style="color:var(--gray-light);font-size:14px;margin-bottom:16px;">🌍 Idioma activo: <strong>' + idiomaActivo + '</strong>' + (infoIdioma ? ' (Nivel ' + infoIdioma.nivel + ')' : '') + '</p>' : '') +
+                    '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">' +
+                    '<button class="btn-primary" onclick="window.UIJSON.abrirGeneradorJSON()" style="flex:1;min-width:140px;"><i class="fas fa-plus"></i> Generar</button>' +
+                    '<button class="btn-secondary" onclick="window.UIJSON.abrirImportadorJSON()" style="flex:1;min-width:140px;"><i class="fas fa-file-import"></i> Importar</button>' +
+                    '</div></div>';
+            } catch (e) {
+                console.warn('⚠️ Error mostrando pantalla de inicio:', e);
+            }
+        }
+
+        // ============================================================
+        // RESPUESTA Y NAVEGACIÓN
+        // ============================================================
+        
+        async _responderEstudio(tipo) {
+            if (pipeline && pipeline.procesarRespuesta) {
+                this._resetearEstadoFrase();
+                pipeline.procesarRespuesta(tipo);
+                this._guardarIndiceEstudio();
+                setTimeout(async () => {
+                    this._resetearEstadoFrase();
+                    
+                    await this._recargarProgresoCompleto();
+                    
+                    await this._verificarProgresoTema();
+                    if (!this._temaFinalizado) {
+                        this._renderizarFraseInteractiva();
+                    }
+                    if (window.UIDashboard) {
+                        window.UIDashboard._cargarDashboardInicial(window.uiCore);
+                    }
+                }, 50);
+            }
+        }
+
+        _fraseAnterior() {
+            if (pipeline && pipeline.anterior) {
+                this._resetearEstadoFrase();
+                pipeline.anterior();
+                this._guardarIndiceEstudio();
+                setTimeout(async () => {
+                    this._resetearEstadoFrase();
+                    await this._recargarProgresoCompleto();
+                    await this._verificarProgresoTema();
+                    if (!this._temaFinalizado) {
+                        this._renderizarFraseInteractiva();
+                    }
+                }, 50);
+            }
+        }
+
+        _fraseSiguiente() {
+            if (pipeline && pipeline.siguiente) {
+                this._resetearEstadoFrase();
+                pipeline.siguiente();
+                this._guardarIndiceEstudio();
+                setTimeout(async () => {
+                    this._resetearEstadoFrase();
+                    await this._recargarProgresoCompleto();
+                    await this._verificarProgresoTema();
+                    if (!this._temaFinalizado) {
+                        this._renderizarFraseInteractiva();
+                    }
+                }, 50);
+            }
+        }
     }
-}
 
-// ============================================================
-// INSTANCIA GLOBAL
-// ============================================================
+    // ============================================================
+    // INSTANCIA GLOBAL
+    // ============================================================
 
-window.UIConfig = new UIConfig();
-
-console.log('✅ UIConfig v24.4 - CORREGIDO PARA APK: CARGA DE ARCHIVOS LOCALES');
-console.log('  📱 Usa XMLHttpRequest para archivos locales en APK');
-console.log('  📱 Múltiples rutas de búsqueda (assets/data/, www/data/, etc.)');
-console.log('  📱 Fallback con fetch para servidores HTTP');
-console.log('  📱 Detección de modo APK (file:// protocol)');
-console.log('  🔥 Instrucciones explícitas para desglose de TODAS las palabras');
-console.log('  🔥 Ejemplos concretos de desglose completo (5 palabras → 5 entradas)');
-console.log('  🔥 Aviso OBLIGATORIO en cada frase con instrucciones claras');
-console.log('  🔥 Guarda el idioma seleccionado en localStorage');
-console.log('  🔥 Sincroniza con IndexedDB');
-console.log('  🔥 Persiste entre recargas de página');
-console.log('  🔥 Sincroniza con gestorIdiomas');
-console.log('  🔥 Nombres de archivos REALES: zh_A1.json, en_B1.json, it_A2.json');
-console.log('  🔥 Convierte "Chino" → "zh", "Inglés" → "en", etc.');
-console.log('  🔥 Verificación HEAD para archivos existentes en data/');
-console.log('  🔥 Ayuda con formato CORRECTO: data/CODIGO_NIVEL.json');
-console.log('  🔥 Modal de progreso con SPINNER, BARRA PROGRESO y ANIMACIONES');
-console.log('  🔥 Super Power importa SIEMPRE como "En Curso"');
-console.log('  🔥 Todas las funcionalidades originales preservadas');
+    // Crear la instancia y exponer TODOS los métodos públicos
+    const instance = new UIStudy();
+    
+    // Exponer la instancia
+    window.UIStudy = instance;
+    
+    // 🔥 IMPORTANTE: Exponer los métodos que se usan desde HTML onclick
+    // Esto asegura que window.UIStudy.metodo() funcione correctamente
+    window.UIStudy.cambiarModoEstudio = instance.cambiarModoEstudio.bind(instance);
+    window.UIStudy._toggleFraseFavorita = instance._toggleFraseFavorita.bind(instance);
+    window.UIStudy._abrirHistoriaCompleta = instance._abrirHistoriaCompleta.bind(instance);
+    window.UIStudy._toggleFlashcardRespuesta = instance._toggleFlashcardRespuesta.bind(instance);
+    window.UIStudy._generarPista = instance._generarPista.bind(instance);
+    window.UIStudy._responderEstudio = instance._responderEstudio.bind(instance);
+    window.UIStudy._fraseAnterior = instance._fraseAnterior.bind(instance);
+    window.UIStudy._fraseSiguiente = instance._fraseSiguiente.bind(instance);
+    window.UIStudy._reproducirFrase = instance._reproducirFrase.bind(instance);
+    window.UIStudy._abrirModalGuardarPalabra = instance._abrirModalGuardarPalabra.bind(instance);
+    window.UIStudy._cerrarModalPalabraAvanzado = instance._cerrarModalPalabraAvanzado.bind(instance);
+    window.UIStudy.cargar = instance.cargar.bind(instance);
+    
+    console.log('✅ UIStudy v24.1 - DISEÑO INMERSIVO CORREGIDO');
+    console.log('  🔥 Todos los métodos expuestos correctamente');
+    console.log('  ✅ window.UIStudy.cambiarModoEstudio disponible');
+    console.log('  ✅ MODO MÚLTIPLE CORREGIDO - Generación de opciones estable');
+    console.log('  ✅ Sin duplicados de botones');
+})();
