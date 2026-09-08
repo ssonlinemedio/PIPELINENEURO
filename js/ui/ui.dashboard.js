@@ -1,5 +1,5 @@
 // ============================================================
-// UI DASHBOARD v25.2 - CORREGIDO CON TUTOR NEURO V7.0
+// UI DASHBOARD v25.4 MODERN RESPONSIVE - CORREGIDO CON TUTOR NEURO V7.0
 // ============================================================
 
 class UIDashboard {
@@ -269,6 +269,126 @@ class UIDashboard {
         ];
     }
 
+    _inyectarEstilosModernos() {
+        try {
+            if (document.getElementById('dashboardModernStyles')) return;
+            const style = document.createElement('style');
+            style.id = 'dashboardModernStyles';
+            style.textContent = `
+/* ============================================================
+   PIPELINE NEURO - DASHBOARD MODERNO v1.1
+   Responsive real: el dashboard ocupa TODO el ancho disponible.
+   IMPORTANTE: #dashboardGrid ya es un grid del dashboard antiguo;
+   el nuevo layout es un único contenedor interno y debe abarcar
+   todas las columnas. No se modifica la estructura HTML global.
+   ============================================================ */
+#dashboardGrid{display:block!important;width:100%!important;max-width:none!important;min-width:0!important;box-sizing:border-box!important}
+#dashboardView{width:100%;max-width:none;min-width:0;box-sizing:border-box}
+#dashboardGrid .dm-dashboard{display:flex;flex-direction:column;gap:18px;padding-bottom:8px;width:100%;max-width:none;min-width:0;box-sizing:border-box}
+#dashboardGrid .dm-hero{position:relative;overflow:hidden;background:linear-gradient(135deg,#fff 0%,#f7f6ff 52%,#f1fbfb 100%);border:1px solid rgba(108,92,231,.14);border-radius:24px;padding:24px;box-shadow:0 10px 35px rgba(45,52,54,.07)}
+#dashboardGrid .dm-hero:before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-90px;top:-120px;background:rgba(108,92,231,.08);pointer-events:none}
+#dashboardGrid .dm-hero:after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;right:90px;bottom:-125px;background:rgba(0,206,201,.06);pointer-events:none}
+#dashboardGrid .dm-hero-main{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:flex-start;gap:18px}
+#dashboardGrid .dm-kicker{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border-radius:999px;background:rgba(108,92,231,.08);color:var(--primary);font-size:11px;font-weight:700;letter-spacing:.35px;text-transform:uppercase}
+#dashboardGrid .dm-title{font-size:clamp(25px,3vw,34px);line-height:1.08;font-weight:800;letter-spacing:-.7px;margin:10px 0 7px;color:var(--dark)}
+#dashboardGrid .dm-subtitle{font-size:13px;line-height:1.55;color:var(--gray);margin:0;max-width:650px}
+#dashboardGrid .dm-subtitle strong{color:var(--dark)}
+#dashboardGrid .dm-hero-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;position:relative;z-index:2}
+#dashboardGrid .dm-btn{border:1px solid var(--light);background:rgba(255,255,255,.9);color:var(--dark);border-radius:12px;padding:9px 13px;font:600 12px var(--font);cursor:pointer;transition:.22s ease;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+#dashboardGrid .dm-btn:hover{transform:translateY(-2px);border-color:rgba(108,92,231,.35);box-shadow:0 8px 20px rgba(45,52,54,.08)}
+#dashboardGrid .dm-btn.primary{background:var(--primary);color:#fff;border-color:var(--primary);box-shadow:0 7px 18px rgba(108,92,231,.22)}
+#dashboardGrid .dm-btn.primary:hover{background:var(--primary-dark);border-color:var(--primary-dark)}
+#dashboardGrid .dm-btn.accent{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;border:0}
+#dashboardGrid .dm-mode{margin-top:18px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:16px;border-top:1px solid rgba(108,92,231,.1);position:relative;z-index:1}
+#dashboardGrid .dm-mode-copy{font-size:11px;color:var(--gray)}
+#dashboardGrid .dm-mode-copy strong{display:block;color:var(--dark);font-size:12px;margin-bottom:2px}
+#dashboardGrid .dm-mode-toggle{display:inline-flex;gap:3px;background:rgba(45,52,54,.05);padding:3px;border-radius:10px}
+#dashboardGrid .dm-mode-toggle button{border:0;background:transparent;color:var(--gray);border-radius:8px;padding:7px 11px;font:600 11px var(--font);cursor:pointer}
+#dashboardGrid .dm-mode-toggle button.active{background:#fff;color:var(--primary);box-shadow:0 3px 10px rgba(45,52,54,.08)}
+#dashboardGrid .dm-section-title{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:3px 2px 9px}
+#dashboardGrid .dm-section-title h3{font-size:15px;font-weight:800;color:var(--dark);margin:0}
+#dashboardGrid .dm-section-title p{font-size:11px;color:var(--gray);margin:2px 0 0}
+#dashboardGrid .dm-section-title .dm-count{font-size:10px;color:var(--gray);background:var(--bg);padding:5px 9px;border-radius:999px}
+#dashboardGrid .dm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#dashboardGrid .dm-stat{background:#fff;border:1px solid rgba(45,52,54,.07);border-radius:16px;padding:14px 15px;min-width:0;box-shadow:0 5px 20px rgba(45,52,54,.045)}
+#dashboardGrid .dm-stat-top{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--gray);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.35px}
+#dashboardGrid .dm-stat-icon{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:rgba(108,92,231,.09);color:var(--primary);font-size:14px}
+#dashboardGrid .dm-stat-value{font-size:23px;font-weight:800;letter-spacing:-.4px;color:var(--dark);margin-top:9px}
+#dashboardGrid .dm-stat-meta{font-size:10px;color:var(--gray);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dashboardGrid .dm-progress{height:5px;background:var(--bg);border-radius:99px;overflow:hidden;margin-top:9px}
+#dashboardGrid .dm-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:99px;transition:width .6s ease}
+#dashboardGrid .dm-modules{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:11px}
+#dashboardGrid .dm-card{position:relative;min-width:0;display:flex;align-items:center;gap:12px;padding:14px;background:#fff;border:1px solid rgba(45,52,54,.075);border-radius:17px;cursor:pointer;box-shadow:0 5px 18px rgba(45,52,54,.045);transition:.24s cubic-bezier(.2,.8,.2,1);overflow:hidden}
+#dashboardGrid .dm-card:hover{transform:translateY(-4px);border-color:rgba(108,92,231,.25);box-shadow:0 13px 30px rgba(45,52,54,.1)}
+#dashboardGrid .dm-card.featured{background:linear-gradient(135deg,#fff,#faf9ff);border-color:rgba(108,92,231,.18)}
+#dashboardGrid .dm-card:active{transform:scale(.985)}
+#dashboardGrid .dm-card-icon{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;color:#fff;font-size:19px;box-shadow:0 6px 14px rgba(45,52,54,.1)}
+#dashboardGrid .dm-card-body{min-width:0;flex:1}
+#dashboardGrid .dm-card-title-row{display:flex;align-items:center;gap:7px;min-width:0}
+#dashboardGrid .dm-card-title{font-size:13px;font-weight:750;color:var(--dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dashboardGrid .dm-card-desc{font-size:10.5px;line-height:1.35;color:var(--gray);margin:3px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dashboardGrid .dm-badge{flex:0 0 auto;font-size:9px;font-weight:700;color:var(--primary);background:rgba(108,92,231,.08);padding:3px 7px;border-radius:999px}
+#dashboardGrid .dm-arrow{color:var(--gray-light);font-size:11px;transition:.22s ease}
+#dashboardGrid .dm-card:hover .dm-arrow{color:var(--primary);transform:translateX(3px)}
+#dashboardGrid .dm-category{background:rgba(255,255,255,.58);border:1px solid rgba(45,52,54,.055);border-radius:20px;padding:15px}
+#dashboardGrid .dm-category-head{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+#dashboardGrid .dm-category-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:#fff;font-size:15px;flex:0 0 34px}
+#dashboardGrid .dm-category-head h4{font-size:13px;font-weight:800;color:var(--dark);margin:0}
+#dashboardGrid .dm-category-head p{font-size:10px;color:var(--gray);margin:2px 0 0}
+#dashboardGrid .dm-category-count{margin-left:auto;font-size:9px;color:var(--gray);background:var(--bg);padding:4px 8px;border-radius:999px}
+#dashboardGrid .dm-category .dm-modules{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+#dashboardGrid .dm-neuro{display:grid;grid-template-columns:1.15fr 1fr;gap:12px}
+#dashboardGrid .dm-neuro-panel{background:#fff;border:1px solid rgba(45,52,54,.07);border-radius:18px;padding:15px;box-shadow:0 5px 18px rgba(45,52,54,.045)}
+#dashboardGrid .dm-neuro-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+#dashboardGrid .dm-neuro-title{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;color:var(--dark)}
+#dashboardGrid .dm-neuro-avatar{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff}
+#dashboardGrid .dm-neuro-status{font-size:9px;font-weight:700;padding:4px 8px;border-radius:999px;background:rgba(0,184,148,.1);color:var(--success)}
+#dashboardGrid .dm-neuro-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:13px}
+#dashboardGrid .dm-neuro-metric{background:var(--bg);border-radius:10px;padding:9px 7px;text-align:center}
+#dashboardGrid .dm-neuro-metric b{display:block;font-size:15px;color:var(--dark)}
+#dashboardGrid .dm-neuro-metric span{display:block;font-size:8px;color:var(--gray);margin-top:2px;text-transform:uppercase;font-weight:700}
+#dashboardGrid .dm-neuro-note{font-size:10px;line-height:1.45;color:var(--gray);margin:11px 0 0}
+#dashboardGrid .dm-health{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+#dashboardGrid .dm-health-item{background:var(--bg);border-radius:12px;padding:10px}
+#dashboardGrid .dm-health-row{display:flex;justify-content:space-between;align-items:center;font-size:9px;font-weight:700;color:var(--gray);margin-bottom:6px}
+#dashboardGrid .dm-health-track{height:5px;background:rgba(0,0,0,.055);border-radius:99px;overflow:hidden}
+#dashboardGrid .dm-health-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--primary),var(--secondary))}
+#dashboardGrid .dm-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:11px 13px;background:var(--bg);border-radius:14px;color:var(--gray);font-size:10px}
+#dashboardGrid .dm-footer span{display:inline-flex;align-items:center;gap:4px}
+#dashboardGrid .dm-featured-label{position:absolute;top:8px;right:8px;font-size:8px;font-weight:800;color:#fff;background:linear-gradient(135deg,#FDCB6E,#E17055);padding:3px 7px;border-radius:999px}
+#dashboardGrid .dm-quick{display:flex;flex-wrap:wrap;gap:7px}
+#dashboardGrid .dm-quick .dm-btn{padding:8px 10px;font-size:10px}
+@media(max-width:1100px){
+  #dashboardGrid .dm-hero-main{flex-direction:column}
+  #dashboardGrid .dm-hero-actions{justify-content:flex-start}
+  #dashboardGrid .dm-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #dashboardGrid .dm-neuro{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  #dashboardGrid .dm-hero{padding:20px}
+  #dashboardGrid .dm-hero-actions{width:100%;justify-content:flex-start}
+  #dashboardGrid .dm-btn{flex:1 1 auto}
+  #dashboardGrid .dm-modules{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:480px){
+  #dashboardGrid .dm-hero{padding:18px;border-radius:20px}
+  #dashboardGrid .dm-title{font-size:25px}
+  #dashboardGrid .dm-stats{gap:8px}
+  #dashboardGrid .dm-stat{padding:12px}
+  #dashboardGrid .dm-stat-value{font-size:20px}
+  #dashboardGrid .dm-modules{grid-template-columns:1fr}
+  #dashboardGrid .dm-category .dm-modules{grid-template-columns:1fr}
+  #dashboardGrid .dm-neuro-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #dashboardGrid .dm-mode{align-items:flex-start;flex-direction:column}
+  #dashboardGrid .dm-hero-actions .dm-btn{width:100%;justify-content:center;flex:1 1 100%}
+}
+`;
+            document.head.appendChild(style);
+        } catch (e) {
+            console.warn('⚠️ No se pudieron inyectar los estilos modernos del dashboard:', e);
+        }
+    }
+
     _esJeroglifico(idioma) {
         if (!idioma) return false;
         const idiomaLower = idioma.toLowerCase().trim();
@@ -324,6 +444,7 @@ class UIDashboard {
         this._inicializado = true;
         
         this.core = core || window.uiCore;
+        this._inyectarEstilosModernos();
         
         const eventosRecarga = [
             'idiomaCambiado', 'favoritoActualizado', 'cambioNivel',
@@ -354,7 +475,7 @@ class UIDashboard {
             }
         }, 5000);
         
-        console.log('📊 UIDashboard v25.2: Inicializado (CON TUTOR NEURO V7.0)');
+        console.log('📊 UIDashboard v25.4 MODERN RESPONSIVE: Inicializado (CON TUTOR NEURO V7.0)');
         return this;
     }
 
@@ -606,7 +727,7 @@ class UIDashboard {
 
     async _ejecutarCargaDashboard() {
         try {
-            console.log('📊 Cargando Dashboard v25.2...');
+            console.log('📊 Cargando Dashboard v25.4 MODERN RESPONSIVE...');
             
             const dashboardGrid = document.getElementById('dashboardGrid');
             if (!dashboardGrid) {
@@ -701,7 +822,7 @@ class UIDashboard {
             // === RECONEXIÓN AUTOMÁTICA DE VIGIA ===
             this._verificarYReconectarVigia();
             
-            console.log(`✅ Dashboard v25.2 cargado en ${Date.now() - this._ultimaActualizacion}ms para: ${idiomaActivo}`);
+            console.log(`✅ Dashboard v25.4 MODERN RESPONSIVE cargado en ${Date.now() - this._ultimaActualizacion}ms para: ${idiomaActivo}`);
             
         } catch (error) {
             console.error('❌ Error cargando dashboard:', error);
@@ -714,519 +835,327 @@ class UIDashboard {
     // ============================================================
     
     async _renderizarDashboardHTML(container, data) {
-        const { stats, usuario, temas, progreso, racha, neuroEstado, idiomaActivo, esJeroglifico, esTonal, tonosStats } = data;
-        
+        const {
+            stats, usuario, temas, progreso, racha, neuroEstado,
+            idiomaActivo, esJeroglifico, esTonal, tonosStats
+        } = data;
+
         const modoLite = this.core?.esModoLite?.() ?? true;
         const esExpandido = !modoLite;
-        
-        let html = '';
-        
-        html += `
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:20px;padding:12px 20px;background:linear-gradient(135deg, var(--primary)06, var(--secondary)06);border-radius:14px;border:2px solid var(--primary)20;">
-                <div>
-                    <h2 style="font-size:22px;font-weight:800;color:var(--dark);margin:0;">
-                        📊 Panel de Control
-                        <span style="font-size:11px;font-weight:400;color:var(--gray);margin-left:8px;">v25.2</span>
-                    </h2>
-                    <p style="font-size:13px;color:var(--gray);margin:4px 0 0;">
-                        Bienvenido de vuelta, <strong>${usuario?.nombre || 'Usuario'}</strong>
-                        <span style="font-size:11px;color:var(--gray-light);margin-left:8px;">🎯 ${this._obtenerNivelUsuario()}</span>
-                        ${esTonal ? `<span style="font-size:11px;color:var(--primary);margin-left:8px;">🎵 ${this._getNombreIdioma(idiomaActivo)} es tonal</span>` : ''}
-                        ${esJeroglifico ? `<span style="font-size:11px;color:var(--secondary);margin-left:8px;">🀄 Jeroglífico</span>` : ''}
-                    </p>
-                </div>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button class="btn-secondary" onclick="window.UIDashboard.irABiblioteca()" 
-                            style="padding:6px 14px;font-size:12px;background:linear-gradient(135deg,#FDCB6E,#E17055);color:white;border:none;border-radius:6px;cursor:pointer;transition:all 0.3s;"
-                            onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 20px rgba(225,112,85,0.3)'" 
-                            onmouseout="this.style.transform='none';this.style.boxShadow='none'">
-                        <i class="fas fa-book-open"></i> 📚 Biblioteca
-                    </button>
-                    <button class="btn-secondary" onclick="window.UIDashboard.irAManual()" 
-                            style="padding:6px 14px;font-size:12px;background:linear-gradient(135deg,#FDCB6E,#E17055);color:white;border:none;border-radius:6px;cursor:pointer;transition:all 0.3s;"
-                            onmouseover="this.style.transform='scale(1.05)';this.style.boxShadow='0 4px 20px rgba(225,112,85,0.3)'" 
-                            onmouseout="this.style.transform='none';this.style.boxShadow='none'">
-                        <i class="fas fa-book"></i> 📖 Manual
-                    </button>
-                    <button onclick="window.uiCore?.toggleModoDashboard?.()" 
-                            style="padding:6px 14px;font-size:12px;border:none;border-radius:6px;cursor:pointer;transition:all 0.3s;background:${modoLite ? 'var(--primary)' : 'var(--bg)'};color:${modoLite ? 'white' : 'var(--dark)'};"
-                            onmouseover="this.style.transform='scale(1.05)'" 
-                            onmouseout="this.style.transform='none'">
-                        <i class="fas ${modoLite ? 'fa-expand' : 'fa-compress'}"></i>
-                        ${modoLite ? 'Experto' : 'Lite'}
-                    </button>
-                </div>
-            </div>
-        `;
-
-        html += `
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px;">
-        `;
-        
         const badgesCache = await this._calcularBadges(idiomaActivo);
-        
-        // Determinar qué tarjetas mostrar en la vista Lite
-        let tarjetasLite = [...this._TARJETAS_LITE];
-        
-        // Si es tonal, añadir tarjeta de Tonos a la vista Lite
-        if (esTonal) {
-            const tonosExistente = tarjetasLite.find(t => t.id === 'tonos');
-            if (!tonosExistente) {
-                tarjetasLite.push({
-                    id: 'tonos',
-                    icono: '🎵',
-                    titulo: 'Estudio de Tonos',
-                    descripcion: tonosStats && tonosStats.totalFrasesConTono > 0 
-                        ? `${tonosStats.totalFrasesConTono} frases con tonos · Practica pronunciación`
-                        : 'Genera frases para practicar tonos',
-                    color: 'linear-gradient(135deg,#6C5CE7,#00CEC9)',
-                    categoria: 'lenguaje',
-                    accion: 'irATonos'
-                });
-            }
+
+        const escapeHtml = (value) => String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        const nivel = this._obtenerNivelUsuario();
+        const nombreUsuario = escapeHtml(usuario?.nombre || 'Usuario');
+        const idiomaNombre = escapeHtml(this._getNombreIdioma(idiomaActivo));
+
+        const pctProgreso = Math.max(0, Math.min(100, Number(stats?.progreso || 0)));
+        const totalFrases = Number(stats?.totalFrases || 0);
+        const totalPalabras = Number(stats?.totalPalabras || 0);
+        const rcn = Number(stats?.neuroScore || 0);
+        const energia = Math.max(0, Math.min(100, Number(neuroEstado?.energia ?? 0)));
+        const foco = Math.max(0, Math.min(100, Number(neuroEstado?.foco ?? 0)));
+        const eficiencia = Math.max(0, Math.min(100, Number(neuroEstado?.eficiencia ?? 0)));
+        const fatiga = Math.max(0, Math.min(100, Number(neuroEstado?.fatiga ?? 0)));
+
+        const tarjetasLite = [...this._TARJETAS_LITE];
+        if (esTonal && !tarjetasLite.some(t => t.id === 'tonos')) {
+            tarjetasLite.push({
+                id: 'tonos',
+                icono: '🎵',
+                titulo: 'Estudio de Tonos',
+                descripcion: tonosStats && tonosStats.totalFrasesConTono > 0
+                    ? `${tonosStats.totalFrasesConTono} frases con tonos · Practica pronunciación`
+                    : 'Genera frases para practicar tonos',
+                color: 'linear-gradient(135deg,#6C5CE7,#00CEC9)',
+                categoria: 'lenguaje',
+                accion: 'irATonos'
+            });
         }
-        
-        for (const tarjeta of tarjetasLite) {
-            const badge = badgesCache[tarjeta.id] || null;
-            
-            const isLite = true;
-            const shadow = isLite && (tarjeta.id === 'biblioteca' || tarjeta.id === 'elipse' || tarjeta.id === 'ondasCruzadas' || tarjeta.id === 'manual' || tarjeta.id === 'tonos')
-                ? '0 8px 32px rgba(108,92,231,0.15)'
-                : '0 4px 16px rgba(0,0,0,0.06)';
-            
-            const borderColor = isLite && (tarjeta.id === 'biblioteca' || tarjeta.id === 'elipse' || tarjeta.id === 'ondasCruzadas' || tarjeta.id === 'manual' || tarjeta.id === 'tonos')
-                ? '2px solid var(--primary)' 
-                : '1px solid var(--light)';
-            
-            let accionClick = '';
-            if (tarjeta.id === 'biblioteca') {
-                accionClick = 'window.UIDashboard.irABiblioteca()';
-            } else if (tarjeta.id === 'elipse') {
-                accionClick = 'window.UIDashboard.irAElipse()';
-            } else if (tarjeta.id === 'ondasCruzadas') {
-                accionClick = 'window.UIDashboard.irAOndasCruzadas()';
-            } else if (tarjeta.id === 'manual') {
-                accionClick = 'window.UIDashboard.irAManual()';
-            } else if (tarjeta.id === 'config') {
-                accionClick = 'window.UIDashboard.irAConfig()';
-            } else if (tarjeta.id === 'tools') {
-                accionClick = 'window.UIDashboard.irATools()';
-            } else if (tarjeta.id === 'tonos') {
-                accionClick = 'window.UIDashboard.irATonos()';
-            } else {
-                accionClick = `window.uiCore?.irAModulo?.('${tarjeta.id}')`;
-            }
-            
-            // Badge especial para Tonos
-            let badgeTexto = badge ? badge.texto : '';
-            if (tarjeta.id === 'tonos' && tonosStats) {
-                badgeTexto = `🎵 ${tonosStats.totalFrasesConTono || 0}`;
-            }
-            
-            html += `
-                <div class="dash-card" onclick="${accionClick}" 
-                     style="
-                        background:var(--white);
-                        border-radius:20px;
-                        padding:20px 16px;
-                        box-shadow:${shadow};
-                        border:${borderColor};
-                        cursor:pointer;
-                        transition:all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-                        display:flex;
-                        flex-direction:column;
-                        align-items:center;
-                        text-align:center;
-                        gap:10px;
-                        min-height:160px;
-                        position:relative;
-                        overflow:hidden;
-                     "
-                     onmouseover="
-                        this.style.transform='translateY(-6px) scale(1.02)';
-                        this.style.boxShadow='0 16px 48px rgba(0,0,0,0.12)';
-                        this.style.borderColor='var(--primary)';
-                        this.querySelector('.dash-card-arrow').style.transform='translateX(6px)';
-                        this.querySelector('.dash-card-arrow').style.opacity='1';
-                     " 
-                     onmouseout="
-                        this.style.transform='none';
-                        this.style.boxShadow='${shadow}';
-                        this.style.borderColor='${isLite && (tarjeta.id === 'biblioteca' || tarjeta.id === 'elipse' || tarjeta.id === 'ondasCruzadas' || tarjeta.id === 'manual' || tarjeta.id === 'tonos') ? 'var(--primary)' : 'var(--light)'}';
-                        this.querySelector('.dash-card-arrow').style.transform='none';
-                        this.querySelector('.dash-card-arrow').style.opacity='0.5';
-                     ">
-                    
-                    ${badgeTexto ? `
-                        <div style="
-                            position:absolute;
-                            top:8px;
-                            right:8px;
-                            background:${tarjeta.id === 'tonos' ? 'rgba(108,92,231,0.9)' : (badge?.color || 'rgba(108,92,231,0.9)')};
-                            color:white;
-                            padding:2px 10px;
-                            border-radius:50px;
-                            font-size:10px;
-                            font-weight:600;
-                            box-shadow:0 2px 12px rgba(0,0,0,0.15);
-                        ">
-                            ${badgeTexto}
+
+        const accionPara = (id) => {
+            const acciones = {
+                biblioteca: 'window.UIDashboard.irABiblioteca()',
+                elipse: 'window.UIDashboard.irAElipse()',
+                ondasCruzadas: 'window.UIDashboard.irAOndasCruzadas()',
+                manual: 'window.UIDashboard.irAManual()',
+                config: 'window.UIDashboard.irAConfig()',
+                tools: 'window.UIDashboard.irATools()',
+                tonos: 'window.UIDashboard.irATonos()',
+                tutor_panel: 'window.UIDashboard.irATutorPanel()',
+                tutor_generador: 'window.UIDashboard.irAGenerador()'
+            };
+            return acciones[id] || `window.uiCore?.irAModulo?.('${id}')`;
+        };
+
+        const destacados = new Set(['biblioteca', 'elipse', 'ondasCruzadas', 'manual', 'tonos']);
+
+        const badgeTexto = (tarjeta) => {
+            const badge = badgesCache[tarjeta.id];
+            if (tarjeta.id === 'tonos' && tonosStats) return `🎵 ${tonosStats.totalFrasesConTono || 0}`;
+            return badge?.texto || '';
+        };
+
+        const renderCard = (tarjeta, options = {}) => {
+            const badge = badgeTexto(tarjeta);
+            const featured = options.featured || destacados.has(tarjeta.id);
+            const icon = tarjeta.icono?.startsWith('fa-')
+                ? `<i class="fas ${tarjeta.icono}"></i>`
+                : tarjeta.icono;
+
+            return `
+                <div class="dm-card ${featured ? 'featured' : ''}"
+                     onclick="${accionPara(tarjeta.id)}"
+                     role="button"
+                     tabindex="0"
+                     onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+                    ${featured ? '<span class="dm-featured-label">DESTACADO</span>' : ''}
+                    <div class="dm-card-icon" style="background:${tarjeta.color || 'linear-gradient(135deg,var(--primary),var(--secondary))'}">${icon}</div>
+                    <div class="dm-card-body">
+                        <div class="dm-card-title-row">
+                            <span class="dm-card-title">${escapeHtml(tarjeta.titulo || tarjeta.nombre)}</span>
+                            ${badge ? `<span class="dm-badge">${badge}</span>` : ''}
                         </div>
-                    ` : ''}
-                    
-                    ${isLite && (tarjeta.id === 'biblioteca' || tarjeta.id === 'elipse' || tarjeta.id === 'ondasCruzadas' || tarjeta.id === 'manual' || tarjeta.id === 'tonos') ? `
-                        <div style="
-                            position:absolute;
-                            top:-30px;
-                            right:-30px;
-                            width:100px;
-                            height:100px;
-                            border-radius:50%;
-                            background:linear-gradient(135deg, rgba(108,92,231,0.06), rgba(0,206,201,0.06));
-                            pointer-events:none;
-                        "></div>
-                    ` : ''}
-                    
-                    <div style="
-                        width:56px;
-                        height:56px;
-                        border-radius:16px;
-                        background:${tarjeta.color};
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:28px;
-                        color:white;
-                        flex-shrink:0;
-                        box-shadow:0 4px 16px rgba(0,0,0,0.1);
-                        transition:all 0.3s ease;
-                        position:relative;
-                        z-index:1;
-                    ">
-                        ${tarjeta.icono}
+                        <p class="dm-card-desc">${escapeHtml(tarjeta.descripcion || tarjeta.desc || '')}</p>
                     </div>
-                    
-                    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;z-index:1;">
-                        <h3 style="font-size:${isLite ? '16px' : '14px'};font-weight:700;color:var(--dark);margin:0;display:flex;align-items:center;justify-content:center;gap:6px;">
-                            ${tarjeta.titulo}
-                            ${(tarjeta.id === 'biblioteca' || tarjeta.id === 'elipse' || tarjeta.id === 'ondasCruzadas' || tarjeta.id === 'manual' || tarjeta.id === 'tonos') && isLite ? `
-                                <span style="font-size:8px;background:linear-gradient(135deg,#FDCB6E,#E17055);color:white;padding:1px 8px;border-radius:50px;font-weight:600;">⭐</span>
-                            ` : ''}
-                        </h3>
-                        <p style="font-size:12px;color:var(--gray);margin:4px 0 0;line-height:1.4;max-width:160px;margin-left:auto;margin-right:auto;">
-                            ${tarjeta.descripcion}
-                        </p>
-                    </div>
-                    
-                    <div class="dash-card-arrow" style="color:var(--gray-light);font-size:14px;opacity:0.5;transition:all 0.3s ease;z-index:1;">
-                        <i class="fas fa-chevron-right"></i>
-                    </div>
+                    <div class="dm-arrow"><i class="fas fa-chevron-right"></i></div>
                 </div>
             `;
-        }
-        
-        html += `
-            </div>
-        `;
+        };
 
-        // ============================================================
-        // VISTA EXPANDIDA
-        // ============================================================
-        
-        if (esExpandido) {
-            const idsLite = new Set(tarjetasLite.map(t => t.id));
-            
-            // Determinar qué tarjetas de la categoría Lenguaje mostrar
-            const tarjetasLenguaje = [
-                { id: 'grammar', nombre: 'Gramática', icono: 'fa-sitemap', desc: 'Reglas y estructuras' },
-                { id: 'caracteres', nombre: 'Caracteres', icono: 'fa-font', desc: 'Escritura jeroglífica' }
-            ];
-            
-            // Añadir Tonos si es tonal
-            if (esTonal) {
-                tarjetasLenguaje.push({ 
-                    id: 'tonos', 
-                    nombre: '🎵 Estudio de Tonos', 
-                    icono: 'fa-music', 
-                    desc: 'Práctica de tonos' 
-                });
-            }
-            
-            tarjetasLenguaje.push({ 
-                id: 'fonetica', 
-                nombre: 'Fonética', 
-                icono: 'fa-microphone-alt', 
-                desc: 'Pronunciación' 
-            });
-            
-            // Categorías personalizadas
-            const categoriasPersonalizadas = [
-                {
-                    id: 'lectura',
-                    nombre: '📚 Lectura',
-                    descripcion: 'Gestiona tu biblioteca de lecturas',
-                    icono: '📚',
-                    color: 'linear-gradient(135deg, #FDCB6E, #E17055)',
-                    tarjetas: [
-                        { id: 'biblioteca', nombre: 'Biblioteca de Lectura', icono: 'fa-book-open', desc: 'Todas tus historias y libros' }
-                    ]
-                },
-                {
-                    id: 'tutor',
-                    nombre: '🧠 Tutor Inteligente',
-                    descripcion: 'Tu asistente personal de aprendizaje',
-                    icono: '🧠',
-                    color: 'linear-gradient(135deg, #6C5CE7, #A29BFE)',
-                    tarjetas: [
-                        { id: 'tutor_panel', nombre: 'Tutor NeuroAdaptativo', icono: 'fa-brain', desc: 'Aprendizaje personalizado con IA' },
-                        { id: 'tutor_generador', nombre: 'Generador NeuroAdaptativo', icono: 'fa-magic', desc: 'Genera contenido personalizado' }
-                    ]
-                },
-                {
-                    id: 'aprendizaje',
-                    nombre: '📚 Aprendizaje',
-                    descripcion: 'Gestiona tu contenido y progreso',
-                    icono: '📚',
-                    color: 'linear-gradient(135deg, #00B894, #55EFC4)',
-                    tarjetas: [
-                        { id: 'study', nombre: 'Estudiar', icono: 'fa-graduation-cap', desc: 'Práctica con SRS' },
-                        { id: 'temas', nombre: 'Temas', icono: 'fa-folder-open', desc: 'Organiza tu contenido' },
-                        { id: 'espacio', nombre: 'Mi Espacio', icono: 'fa-star', desc: 'Tus favoritos' },
-                        { id: 'elipse', nombre: '🌌 Modo Elipse', icono: 'fa-wave-square', desc: 'Aprendizaje expansivo' },
-                        { id: 'ondasCruzadas', nombre: '🌊 Ondas Cruzadas', icono: 'fa-network-wired', desc: 'Interferencia de elipses' }
-                    ]
-                },
-                {
-                    id: 'lenguaje',
-                    nombre: '🌍 Lenguaje',
-                    descripcion: 'Herramientas lingüísticas avanzadas',
-                    icono: '🌍',
-                    color: 'linear-gradient(135deg, #00CEC9, #81ECEC)',
-                    tarjetas: tarjetasLenguaje
-                },
-                {
-                    id: 'sistema',
-                    nombre: '⚙️ Sistema',
-                    descripcion: 'Control y configuración',
-                    icono: '⚙️',
-                    color: 'linear-gradient(135deg, #636E72, #2D3436)',
-                    tarjetas: [
-                        { id: 'manual', nombre: 'Manual Interactivo', icono: 'fa-book', desc: 'Guía completa del sistema' },
-                        { id: 'config', nombre: 'Configuración', icono: 'fa-sliders-h', desc: 'Ajusta tu perfil' },
-                        { id: 'tools', nombre: 'Herramientas', icono: 'fa-tools', desc: 'Backup y diagnóstico' },
-                        { id: 'vigia', nombre: 'Vigía IA', icono: 'fa-eye', desc: 'Asistente inteligente' }
-                    ]
-                },
-                {
-                    id: 'competiciones',
-                    nombre: '🏆 Competiciones',
-                    descripcion: 'Desafía a otros aprendices',
-                    icono: '🏆',
-                    color: 'linear-gradient(135deg, #FDCB6E, #E17055)',
-                    tarjetas: [
-                        { id: 'competiciones', nombre: 'Liga Neuro', icono: 'fa-trophy', desc: 'Compite con IA' }
-                    ]
-                }
-            ];
-
-            for (const categoria of categoriasPersonalizadas) {
-                let tarjetasFiltradas = categoria.tarjetas.filter(t => !idsLite.has(t.id));
-                
-                // Filtrar caracteres si no es jeroglífico
-                if (categoria.id === 'lenguaje') {
-                    tarjetasFiltradas = tarjetasFiltradas.filter(t => {
-                        if (t.id === 'caracteres' && !esJeroglifico) return false;
-                        if (t.id === 'tonos' && !esTonal) return false;
-                        return true;
-                    });
-                }
-                
-                if (tarjetasFiltradas.length === 0) continue;
-
-                html += `
-                    <div class="categoria-container" style="grid-column: 1 / -1; margin-top: 12px;">
-                        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;padding:0 4px;">
-                            <span style="font-size:24px;">${categoria.icono}</span>
-                            <div>
-                                <h3 style="font-size:16px;font-weight:700;color:var(--dark);margin:0;">${categoria.nombre}</h3>
-                                <p style="font-size:12px;color:var(--gray);margin:2px 0 0;">${categoria.descripcion}</p>
-                            </div>
-                            <span style="font-size:11px;color:var(--gray-light);margin-left:auto;background:var(--bg);padding:2px 14px;border-radius:50px;">${tarjetasFiltradas.length} módulos</span>
+        let html = `
+            <div class="dm-dashboard">
+                <section class="dm-hero">
+                    <div class="dm-hero-main">
+                        <div>
+                            <span class="dm-kicker"><i class="fas fa-sparkles"></i> Pipeline Neuro</span>
+                            <h2 class="dm-title">Tu espacio de aprendizaje</h2>
+                            <p class="dm-subtitle">
+                                Bienvenido, <strong>${nombreUsuario}</strong>.
+                                Estás trabajando en <strong>${idiomaNombre}</strong> · nivel <strong>${escapeHtml(nivel)}</strong>.
+                                ${esTonal ? ' Este idioma incluye entrenamiento específico de tonos.' : ''}
+                                ${esJeroglifico ? ' También tienes herramientas específicas para escritura jeroglífica.' : ''}
+                            </p>
                         </div>
-                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-                `;
-
-                for (const tarjeta of tarjetasFiltradas) {
-                    let extraStyles = '';
-                    let accionClick = '';
-                    let badge = '';
-                    
-                    if (tarjeta.id === 'biblioteca') {
-                        extraStyles = 'border:2px solid #E17055;background:linear-gradient(135deg, #E1705508, #FDCB6E08);';
-                        accionClick = 'window.UIDashboard.irABiblioteca()';
-                        const badgeInfo = badgesCache['biblioteca'];
-                        if (badgeInfo) badge = badgeInfo.html || '';
-                    } else if (tarjeta.id === 'manual') {
-                        extraStyles = 'border:2px solid #E17055;background:linear-gradient(135deg, #E1705508, #FDCB6E08);';
-                        accionClick = 'window.UIDashboard.irAManual()';
-                        const badgeInfo = badgesCache['manual'];
-                        if (badgeInfo) badge = badgeInfo.html || '';
-                    } else if (tarjeta.id === 'tonos') {
-                        extraStyles = 'border:2px solid #6C5CE7;background:linear-gradient(135deg, #6C5CE708, #00CEC908);';
-                        accionClick = 'window.UIDashboard.irATonos()';
-                        if (tonosStats) {
-                            badge = `<span style="font-size:9px;color:var(--primary);">🎵 ${tonosStats.totalFrasesConTono || 0}</span>`;
-                        }
-                    } else if (tarjeta.id === 'tutor_panel') {
-                        extraStyles = 'border:2px solid var(--primary);background:linear-gradient(135deg, var(--primary)04, var(--secondary)04);';
-                        accionClick = 'window.UIDashboard.irATutorPanel()';
-                        try {
-                            if (window.tutorNeuro) {
-                                const pendientes = window.tutorNeuro.getIntervencionesPendientes?.() || [];
-                                if (pendientes.length > 0) {
-                                    badge = `<span style="font-size:9px;background:var(--warning);color:white;padding:1px 10px;border-radius:50px;">${pendientes.length}</span>`;
-                                }
-                            }
-                        } catch(e) {}
-                    } else if (tarjeta.id === 'tutor_generador') {
-                        extraStyles = 'border:2px solid var(--secondary);background:linear-gradient(135deg, var(--secondary)04, var(--primary)04);';
-                        accionClick = 'window.UIDashboard.irAGenerador()';
-                        try {
-                            const nivelActual = this._obtenerNivelUsuario();
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">🎯 ${nivelActual}</span>`;
-                        } catch(e) {}
-                    } else if (tarjeta.id === 'elipse') {
-                        accionClick = 'window.UIDashboard.irAElipse()';
-                    } else if (tarjeta.id === 'ondasCruzadas') {
-                        accionClick = 'window.UIDashboard.irAOndasCruzadas()';
-                    } else if (tarjeta.id === 'config') {
-                        accionClick = 'window.UIDashboard.irAConfig()';
-                    } else if (tarjeta.id === 'tools') {
-                        accionClick = 'window.UIDashboard.irATools()';
-                    } else {
-                        accionClick = `window.uiCore?.irAModulo?.('${tarjeta.id}')`;
-                    }
-                    
-                    if (tarjeta.id === 'study' && stats) {
-                        const completadas = stats.progreso || 0;
-                        const total = stats.totalFrases || 1;
-                        const pct = Math.round((completadas / total) * 100);
-                        badge = `<span style="font-size:9px;color:var(--gray-light);">${pct}%</span>`;
-                    }
-                    
-                    if (tarjeta.id === 'temas' && temas) {
-                        const totalTemas = temas.length;
-                        const completados = temas.filter(t => t.estado === 'completado').length;
-                        badge = `<span style="font-size:9px;color:var(--gray-light);">${completados}/${totalTemas}</span>`;
-                    }
-                    
-                    if (tarjeta.id === 'espacio') {
-                        try {
-                            const favs = await window.gestorFavoritos?.contarFavoritos?.() || { frases: 0, palabras: 0 };
-                            const total = favs.frases + favs.palabras;
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">${total}</span>`;
-                        } catch (e) {
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">0</span>`;
-                        }
-                    }
-                    
-                    if (tarjeta.id === 'grammar') {
-                        try {
-                            const palabras = await db?.obtenerPalabrasPorIdioma?.(idiomaActivo) || [];
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">${palabras.length}</span>`;
-                        } catch (e) {
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">0</span>`;
-                        }
-                    }
-                    
-                    if (tarjeta.id === 'caracteres') {
-                        try {
-                            const familias = await db?.obtenerFamiliasCaracteres?.(idiomaActivo) || [];
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">${familias.length}</span>`;
-                        } catch (e) {
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">0</span>`;
-                        }
-                    }
-                    
-                    if (tarjeta.id === 'fonetica') {
-                        try {
-                            const frases = await db?.obtenerFrasesPorIdioma?.(idiomaActivo) || [];
-                            const palabras = await db?.obtenerPalabrasPorIdioma?.(idiomaActivo) || [];
-                            let conTranscripcion = 0;
-                            let total = 0;
-                            for (const f of frases) {
-                                total++;
-                                if (f.transcripcion || f.pinyinCompleto || f.segmentacion?.pinyin) conTranscripcion++;
-                            }
-                            for (const p of palabras) {
-                                total++;
-                                if (p.transcripcion || p.pinyin) conTranscripcion++;
-                            }
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">${conTranscripcion}/${total}</span>`;
-                        } catch (e) {
-                            badge = `<span style="font-size:9px;color:var(--gray-light);">0</span>`;
-                        }
-                    }
-                    
-                    if (tarjeta.id === 'competiciones') {
-                        extraStyles = 'border:2px solid #FDCB6E;background:linear-gradient(135deg, #FDCB6E08, #E1705508);';
-                    }
-
-                    html += `
-                        <div class="dash-card" onclick="${accionClick}" 
-                             style="background:var(--white);border-radius:14px;padding:14px 16px;box-shadow:0 2px 12px rgba(0,0,0,0.04);border-left:4px solid var(--primary);cursor:pointer;transition:all 0.3s ease;display:flex;align-items:center;gap:14px;${extraStyles}"
-                             onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.08)'" 
-                             onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 12px rgba(0,0,0,0.04)'">
-                            <div style="width:40px;height:40px;border-radius:12px;background:${categoria.color};display:flex;align-items:center;justify-content:center;font-size:18px;color:white;flex-shrink:0;">
-                                <i class="fas ${tarjeta.icono}"></i>
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                    <span style="font-size:14px;font-weight:600;color:var(--dark);">${tarjeta.nombre}</span>
-                                    ${badge ? `<span style="font-size:9px;color:var(--gray-light);background:var(--bg);padding:1px 10px;border-radius:50px;">${badge}</span>` : ''}
-                                </div>
-                                <p style="font-size:11px;color:var(--gray);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${tarjeta.desc}</p>
-                            </div>
-                            <div style="color:var(--gray-light);font-size:12px;flex-shrink:0;transition:all 0.3s;">
-                                <i class="fas fa-chevron-right"></i>
-                            </div>
-                        </div>
-                    `;
-                }
-
-                html += `
+                        <div class="dm-hero-actions">
+                            <button class="dm-btn primary" onclick="window.uiCore?.irAModulo?.('study')">
+                                <i class="fas fa-graduation-cap"></i> Estudiar
+                            </button>
+                            <button class="dm-btn" onclick="window.UIDashboard.irABiblioteca()">
+                                <i class="fas fa-book-open"></i> Biblioteca
+                            </button>
+                            <button class="dm-btn" onclick="window.UIDashboard.irATutorPanel()">
+                                <i class="fas fa-brain"></i> Tutor
+                            </button>
                         </div>
                     </div>
+
+                    <div class="dm-mode">
+                        <div class="dm-mode-copy">
+                            <strong>${modoLite ? 'Vista esencial' : 'Vista completa'}</strong>
+                            ${modoLite ? 'Solo lo más importante para entrar a estudiar rápido.' : 'Todos los módulos organizados por área.'}
+                        </div>
+                        <div class="dm-mode-toggle">
+                            <button class="${modoLite ? 'active' : ''}" onclick="window.uiCore?.toggleModoDashboard?.()">Lite</button>
+                            <button class="${!modoLite ? 'active' : ''}" onclick="window.uiCore?.toggleModoDashboard?.()">Experto</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="dm-section-title">
+                        <div>
+                            <h3>Resumen</h3>
+                            <p>Tu actividad actual, sin salir del panel.</p>
+                        </div>
+                    </div>
+                    <div class="dm-stats">
+                        <div class="dm-stat">
+                            <div class="dm-stat-top"><span>Progreso</span><span class="dm-stat-icon"><i class="fas fa-chart-line"></i></span></div>
+                            <div class="dm-stat-value">${pctProgreso}%</div>
+                            <div class="dm-stat-meta">${totalFrases} frases registradas</div>
+                            <div class="dm-progress"><span style="width:${pctProgreso}%"></span></div>
+                        </div>
+                        <div class="dm-stat">
+                            <div class="dm-stat-top"><span>Palabras</span><span class="dm-stat-icon"><i class="fas fa-language"></i></span></div>
+                            <div class="dm-stat-value">${totalPalabras}</div>
+                            <div class="dm-stat-meta">contenido disponible</div>
+                        </div>
+                        <div class="dm-stat">
+                            <div class="dm-stat-top"><span>Racha</span><span class="dm-stat-icon"><i class="fas fa-fire"></i></span></div>
+                            <div class="dm-stat-value">${Number(racha || 0)}<small style="font-size:12px;color:var(--gray)"> d</small></div>
+                            <div class="dm-stat-meta">días consecutivos</div>
+                        </div>
+                        <div class="dm-stat">
+                            <div class="dm-stat-top"><span>RCN</span><span class="dm-stat-icon"><i class="fas fa-brain"></i></span></div>
+                            <div class="dm-stat-value">${rcn.toFixed(1)}</div>
+                            <div class="dm-stat-meta">señal neurocognitiva</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="dm-section-title">
+                        <div>
+                            <h3>${modoLite ? 'Acceso rápido' : 'Módulos principales'}</h3>
+                            <p>${modoLite ? 'Entra directamente en las funciones que más usas.' : 'Selecciona cualquier módulo para continuar.'}</p>
+                        </div>
+                        <span class="dm-count">${tarjetasLite.length} accesos</span>
+                    </div>
+                    <div class="dm-modules">
+                        ${tarjetasLite.map(t => renderCard(t, {featured: destacados.has(t.id)})).join('')}
+                    </div>
+                </section>
+        `;
+
+        if (esExpandido) {
+            const tarjetasLenguaje = [
+                { id:'grammar', nombre:'Gramática', icono:'fa-sitemap', desc:'Reglas y estructuras' },
+                ...(esJeroglifico ? [{ id:'caracteres', nombre:'Caracteres', icono:'fa-font', desc:'Escritura jeroglífica' }] : []),
+                ...(esTonal ? [{ id:'tonos', nombre:'Estudio de Tonos', icono:'fa-music', desc:'Práctica de tonos' }] : []),
+                { id:'fonetica', nombre:'Fonética', icono:'fa-microphone-alt', desc:'Pronunciación' }
+            ];
+
+            const categorias = [
+                {
+                    id:'lectura', nombre:'Lectura', icono:'fa-book-open',
+                    descripcion:'Gestiona tu biblioteca de lecturas',
+                    color:'linear-gradient(135deg,#FDCB6E,#E17055)',
+                    tarjetas:[{id:'biblioteca',nombre:'Biblioteca de Lectura',icono:'fa-book-open',desc:'Todas tus historias y libros'}]
+                },
+                {
+                    id:'tutor', nombre:'Tutor Inteligente', icono:'fa-brain',
+                    descripcion:'Tu asistente personal de aprendizaje',
+                    color:'linear-gradient(135deg,#6C5CE7,#A29BFE)',
+                    tarjetas:[
+                        {id:'tutor_panel',nombre:'Tutor NeuroAdaptativo',icono:'fa-brain',desc:'Aprendizaje personalizado con IA'},
+                        {id:'tutor_generador',nombre:'Generador NeuroAdaptativo',icono:'fa-magic',desc:'Genera contenido personalizado'}
+                    ]
+                },
+                {
+                    id:'aprendizaje', nombre:'Aprendizaje', icono:'fa-graduation-cap',
+                    descripcion:'Contenido, progreso y métodos de estudio',
+                    color:'linear-gradient(135deg,#00B894,#55EFC4)',
+                    tarjetas:[
+                        {id:'study',nombre:'Estudiar',icono:'fa-graduation-cap',desc:'Práctica con SRS'},
+                        {id:'temas',nombre:'Temas',icono:'fa-folder-open',desc:'Organiza tu contenido'},
+                        {id:'espacio',nombre:'Mi Espacio',icono:'fa-star',desc:'Tus favoritos'},
+                        {id:'elipse',nombre:'Modo Elipse',icono:'fa-wave-square',desc:'Aprendizaje expansivo'},
+                        {id:'ondasCruzadas',nombre:'Ondas Cruzadas',icono:'fa-network-wired',desc:'Interferencia de elipses'}
+                    ]
+                },
+                {
+                    id:'lenguaje', nombre:'Lenguaje', icono:'fa-language',
+                    descripcion:'Herramientas lingüísticas avanzadas',
+                    color:'linear-gradient(135deg,#00CEC9,#81ECEC)',
+                    tarjetas:tarjetasLenguaje
+                },
+                {
+                    id:'sistema', nombre:'Sistema', icono:'fa-sliders-h',
+                    descripcion:'Control, ayuda y diagnóstico',
+                    color:'linear-gradient(135deg,#636E72,#2D3436)',
+                    tarjetas:[
+                        {id:'manual',nombre:'Manual Interactivo',icono:'fa-book',desc:'Guía completa del sistema'},
+                        {id:'config',nombre:'Configuración',icono:'fa-sliders-h',desc:'Ajusta tu perfil'},
+                        {id:'tools',nombre:'Herramientas',icono:'fa-tools',desc:'Backup y diagnóstico'},
+                        {id:'vigia',nombre:'Vigía IA',icono:'fa-eye',desc:'Asistente inteligente'}
+                    ]
+                },
+                {
+                    id:'competiciones', nombre:'Competiciones', icono:'fa-trophy',
+                    descripcion:'Desafía a otros aprendices',
+                    color:'linear-gradient(135deg,#FDCB6E,#E17055)',
+                    tarjetas:[{id:'competiciones',nombre:'Liga Neuro',icono:'fa-trophy',desc:'Compite con IA'}]
+                }
+            ];
+
+            const idsLite = new Set(tarjetasLite.map(t => t.id));
+
+            for (const categoria of categorias) {
+                let tarjetas = categoria.tarjetas.filter(t => !idsLite.has(t.id));
+                if (!tarjetas.length) continue;
+
+                html += `
+                    <section class="dm-category">
+                        <div class="dm-category-head">
+                            <div class="dm-category-icon" style="background:${categoria.color}">
+                                <i class="fas ${categoria.icono}"></i>
+                            </div>
+                            <div>
+                                <h4>${escapeHtml(categoria.nombre)}</h4>
+                                <p>${escapeHtml(categoria.descripcion)}</p>
+                            </div>
+                            <span class="dm-category-count">${tarjetas.length} módulos</span>
+                        </div>
+                        <div class="dm-modules">
+                            ${tarjetas.map(t => renderCard(t)).join('')}
+                        </div>
+                    </section>
                 `;
             }
         }
 
-        const totalModulos = modoLite ? 
-            tarjetasLite.length : 
-            tarjetasLite.length + this._TARJETAS_EXPANDIDAS.length;
-        
         html += `
-            <div style="
-                margin-top:24px;
-                padding:12px 20px;
-                background:${modoLite ? 'linear-gradient(135deg, var(--primary)04, var(--secondary)04)' : 'var(--bg)'};
-                border-radius:12px;
-                border:2px solid ${modoLite ? 'var(--primary)20' : 'var(--light)'};
-                display:flex;
-                justify-content:space-between;
-                align-items:center;
-                flex-wrap:wrap;
-                gap:10px;
-                font-size:12px;
-                color:var(--gray);
-            ">
-                <span>📊 ${totalModulos} módulos · ${modoLite ? '🧘 Lite' : '🚀 Expandido'}</span>
-                <span>🎯 ${this._obtenerNivelUsuario()}</span>
-                <span>📈 ${stats?.progreso || 0}%</span>
-                <span>🔥 ${racha || 0}d</span>
-                ${esTonal ? `<span>🎵 ${this._getNombreIdioma(idiomaActivo)} es tonal</span>` : ''}
-                ${esJeroglifico ? `<span>🀄 Jeroglífico</span>` : ''}
-                ${esTonal ? `<span>🔊 Módulo de Tonos disponible ✅</span>` : ''}
+                <section class="dm-neuro">
+                    <div class="dm-neuro-panel">
+                        <div class="dm-neuro-head">
+                            <div class="dm-neuro-title">
+                                <span class="dm-neuro-avatar">🧠</span>
+                                Estado neuroadaptativo
+                            </div>
+                            <span class="dm-neuro-status">${energia >= 70 ? '● Estable' : energia >= 40 ? '● Moderado' : '● Descanso recomendado'}</span>
+                        </div>
+                        <div class="dm-neuro-grid">
+                            <div class="dm-neuro-metric"><b>${energia}%</b><span>Energía</span></div>
+                            <div class="dm-neuro-metric"><b>${foco}%</b><span>Foco</span></div>
+                            <div class="dm-neuro-metric"><b>${eficiencia}%</b><span>Eficiencia</span></div>
+                            <div class="dm-neuro-metric"><b>${fatiga}%</b><span>Fatiga</span></div>
+                        </div>
+                        <p class="dm-neuro-note">
+                            ${energia >= 70
+                                ? 'Tu panel muestra una situación favorable para continuar con una sesión de estudio.'
+                                : energia >= 40
+                                    ? 'Mantén sesiones cortas y revisa el progreso antes de aumentar la carga.'
+                                    : 'La señal actual sugiere priorizar una sesión ligera o una pausa.'}
+                        </p>
+                    </div>
+                    <div class="dm-neuro-panel">
+                        <div class="dm-neuro-title"><span class="dm-neuro-avatar" style="background:linear-gradient(135deg,var(--secondary),#0984E3)">◉</span> Señales del sistema</div>
+                        <div class="dm-health" style="margin-top:13px">
+                            <div class="dm-health-item">
+                                <div class="dm-health-row"><span>Foco</span><strong>${foco}%</strong></div>
+                                <div class="dm-health-track"><div class="dm-health-fill" style="width:${foco}%"></div></div>
+                            </div>
+                            <div class="dm-health-item">
+                                <div class="dm-health-row"><span>Eficiencia</span><strong>${eficiencia}%</strong></div>
+                                <div class="dm-health-track"><div class="dm-health-fill" style="width:${eficiencia}%"></div></div>
+                            </div>
+                            <div class="dm-health-item">
+                                <div class="dm-health-row"><span>Energía</span><strong>${energia}%</strong></div>
+                                <div class="dm-health-track"><div class="dm-health-fill" style="width:${energia}%"></div></div>
+                            </div>
+                            <div class="dm-health-item">
+                                <div class="dm-health-row"><span>Fatiga</span><strong>${fatiga}%</strong></div>
+                                <div class="dm-health-track"><div class="dm-health-fill" style="width:${fatiga}%"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="dm-footer">
+                    <span><i class="fas fa-layer-group"></i> ${modoLite ? tarjetasLite.length : tarjetasLite.length + this._TARJETAS_EXPANDIDAS.length} módulos accesibles</span>
+                    <span><i class="fas fa-graduation-cap"></i> Nivel ${escapeHtml(nivel)}</span>
+                    <span><i class="fas fa-chart-pie"></i> ${pctProgreso}% progreso</span>
+                    <span><i class="fas fa-fire"></i> ${Number(racha || 0)}d de racha</span>
+                    ${esTonal ? '<span><i class="fas fa-music"></i> Tonos disponibles</span>' : ''}
+                    ${esJeroglifico ? '<span><i class="fas fa-font"></i> Caracteres disponibles</span>' : ''}
+                </div>
             </div>
         `;
 
@@ -1677,7 +1606,7 @@ class UIDashboard {
 
 window.UIDashboard = new UIDashboard();
 
-console.log('✅ UIDashboard v25.2 - CORREGIDO CON TUTOR NEURO V7.0');
+console.log('✅ UIDashboard v25.4 MODERN RESPONSIVE - CORREGIDO CON TUTOR NEURO V7.0');
 console.log('  🚀 Carga en ~200ms con caché');
 console.log('  📦 Datos cacheados por 30 segundos');
 console.log('  ⚡ Renderizado instantáneo desde el registro');
