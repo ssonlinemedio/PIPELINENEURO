@@ -1,18 +1,18 @@
 // ============================================================
-// UI STUDY v24.1 - DISEÑO INMERSIVO REPARADO
+// UI STUDY v24.2 - CONTROL DE TRANSCRIPCIÓN FONÉTICA
 // ============================================================
 
 (function() {
     'use strict';
     
-    if (window.UIStudy && window.UIStudy._version === '24.1') {
+    if (window.UIStudy && window.UIStudy._version === '24.2') {
         console.log('⚠️ UIStudy ya está cargado, saltando...');
         return;
     }
 
     class UIStudy {
         constructor() {
-            this._version = '24.1';
+            this._version = '24.2';
             this._modoEstudio = 'flashcard';
             this._pistaActual = '';
             this._opcionesMultiple = [];
@@ -28,10 +28,12 @@
             this._idiomaNativo = 'es';
             this._cacheTranscripciones = {};
 
-            // Mostrar/ocultar el pinyin debajo del Hanzi durante el estudio.
+            // Control global de la visibilidad de cualquier transcripción fonética.
             try {
-                const mostrarPinyinGuardado = localStorage.getItem('uiStudy_mostrarPinyin');
-                this._mostrarPinyin = mostrarPinyinGuardado === null ? true : mostrarPinyinGuardado === 'true';
+                const mostrarTranscripcionGuardado = localStorage.getItem('uiStudy_mostrarTranscripcion');
+                this._mostrarPinyin = mostrarTranscripcionGuardado === null
+                    ? true
+                    : mostrarTranscripcionGuardado === 'true';
             } catch (e) {
                 this._mostrarPinyin = true;
             }
@@ -129,18 +131,25 @@
         }
 
         // ============================================================
-        // MOSTRAR / OCULTAR PINYIN
+        // MOSTRAR / OCULTAR TRANSCRIPCIÓN FONÉTICA
         // ============================================================
 
         _toggleMostrarPinyin(mostrar) {
             this._mostrarPinyin = !!mostrar;
+
             try {
-                localStorage.setItem('uiStudy_mostrarPinyin', String(this._mostrarPinyin));
+                localStorage.setItem(
+                    'uiStudy_mostrarTranscripcion',
+                    String(this._mostrarPinyin)
+                );
             } catch (e) {}
 
-            // Aplicar el cambio inmediatamente a la frase actual.
-            this._renderizarFraseInteractiva();
+            // Redibujar la frase actual inmediatamente.
+            if (typeof this._renderizarFraseInteractiva === 'function') {
+                this._renderizarFraseInteractiva();
+            }
         }
+
 
         // ============================================================
         // MÉTODOS DE UTILIDAD
@@ -1517,7 +1526,7 @@
                         </div>
                         
                         <!-- TRANSCRIPCIÓN -->
-                        ${transcripcion && (!esJeroglifico || isInverso || this._mostrarPinyin) ? `
+                        ${transcripcion && this._mostrarPinyin ? `
                             <div style="
                                 font-size:24px;
                                 color: ${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};
@@ -1576,13 +1585,13 @@
                         ` : ''}
                     </div>
                     
-                    <!-- ===== CONTROL DE PINYIN ===== -->
-                    ${esJeroglifico && !isInverso ? `
+                    <!-- ===== CONTROL DE TRANSCRIPCIÓN FONÉTICA ===== -->
+                    ${transcripcion ? `
                         <div style="
                             display:flex;
                             justify-content:center;
                             align-items:center;
-                            margin:0 0 12px;
+                            margin:4px 0 12px;
                             position:relative;
                             z-index:1;
                         ">
@@ -1606,7 +1615,7 @@
                                     onchange="window.UIStudy._toggleMostrarPinyin(this.checked)"
                                     style="width:16px;height:16px;cursor:pointer;"
                                 >
-                                <span>🔤 Mostrar pinyin debajo del Hanzi</span>
+                                <span>🔤 Mostrar transcripción fonética</span>
                             </label>
                         </div>
                     ` : ''}
@@ -2339,7 +2348,7 @@ REGLAS:
                 container.innerHTML = `
                     <div class="card" style="max-width:500px;margin:0 auto;text-align:center;padding:30px 20px;">
                         <div style="font-size:32px;font-weight:700;color:var(--dark);">${esJeroglifico ? hanzi : frase.original}</div>
-                        ${frase.pinyinCompleto && (!esJeroglifico || this._mostrarPinyin) ? `<div style="font-size:16px;color:var(--gray-light);margin-top:4px;">🔊 ${frase.pinyinCompleto}</div>` : ''}
+                        ${frase.pinyinCompleto ? `<div style="font-size:16px;color:var(--gray-light);margin-top:4px;">🔊 ${frase.pinyinCompleto}</div>` : ''}
                         <div style="font-size:18px;color:var(--gray);margin-top:8px;">→ ${frase.traduccion}</div>
                         <button class="btn-primary" onclick="window.UIStudy.cargar(window.UIStudy.core)" style="margin-top:16px;padding:8px 20px;">
                             <i class="fas fa-sync"></i> Recargar
@@ -4918,7 +4927,7 @@ REGLAS:
     // ============================================================
 
     window.UIStudy = new UIStudy();
-    console.log('✅ UIStudy v24.1 - DISEÑO INMERSIVO REPARADO');
+    console.log('✅ UIStudy v24.2 - CONTROL DE TRANSCRIPCIÓN FONÉTICA');
     console.log('  🔧 Método cambiarModoEstudio reparado y expuesto correctamente');
     console.log('  🔧 Modo múltiple con generación de opciones estable');
     console.log('  🎵 Detección de origen "tonos" para redirección al Estudio de Tonos');
