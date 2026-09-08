@@ -27,6 +27,14 @@
             this._IDIOMAS_JEROGLIFICOS = ['zh', 'ja', 'ko', 'chino', 'japonés', 'coreano', 'chinese', 'japanese', 'korean', 'mandarin', 'mandarín'];
             this._idiomaNativo = 'es';
             this._cacheTranscripciones = {};
+
+            // Mostrar/ocultar el pinyin debajo del Hanzi durante el estudio.
+            try {
+                const mostrarPinyinGuardado = localStorage.getItem('uiStudy_mostrarPinyin');
+                this._mostrarPinyin = mostrarPinyinGuardado === null ? true : mostrarPinyinGuardado === 'true';
+            } catch (e) {
+                this._mostrarPinyin = true;
+            }
             
             this._modoVista = 'frase';
             this._historiaActual = [];
@@ -118,6 +126,20 @@
             this._pistaActual = '';
             this._opcionesMultiple = [];
             this._metodoValidacion = 'offline';
+        }
+
+        // ============================================================
+        // MOSTRAR / OCULTAR PINYIN
+        // ============================================================
+
+        _toggleMostrarPinyin(mostrar) {
+            this._mostrarPinyin = !!mostrar;
+            try {
+                localStorage.setItem('uiStudy_mostrarPinyin', String(this._mostrarPinyin));
+            } catch (e) {}
+
+            // Aplicar el cambio inmediatamente a la frase actual.
+            this._renderizarFraseInteractiva();
         }
 
         // ============================================================
@@ -1495,7 +1517,7 @@
                         </div>
                         
                         <!-- TRANSCRIPCIÓN -->
-                        ${transcripcion ? `
+                        ${transcripcion && (!esJeroglifico || isInverso || this._mostrarPinyin) ? `
                             <div style="
                                 font-size:24px;
                                 color: ${esJeroglifico ? 'var(--primary)' : 'var(--secondary)'};
@@ -1554,6 +1576,41 @@
                         ` : ''}
                     </div>
                     
+                    <!-- ===== CONTROL DE PINYIN ===== -->
+                    ${esJeroglifico && !isInverso ? `
+                        <div style="
+                            display:flex;
+                            justify-content:center;
+                            align-items:center;
+                            margin:0 0 12px;
+                            position:relative;
+                            z-index:1;
+                        ">
+                            <label style="
+                                display:inline-flex;
+                                align-items:center;
+                                gap:8px;
+                                padding:7px 12px;
+                                background:var(--bg);
+                                border:1px solid var(--light);
+                                border-radius:10px;
+                                color:var(--gray);
+                                font-size:12px;
+                                font-weight:600;
+                                cursor:pointer;
+                                user-select:none;
+                            ">
+                                <input
+                                    type="checkbox"
+                                    ${this._mostrarPinyin ? 'checked' : ''}
+                                    onchange="window.UIStudy._toggleMostrarPinyin(this.checked)"
+                                    style="width:16px;height:16px;cursor:pointer;"
+                                >
+                                <span>🔤 Mostrar pinyin debajo del Hanzi</span>
+                            </label>
+                        </div>
+                    ` : ''}
+
                     <!-- ===== BOTONES DE ACCIÓN (MODO FLASHCARD Y ESCUCHA) ===== -->
                     ${modo === 'flashcard' ? `
                         <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;position:relative;z-index:1;flex-wrap:wrap;">
@@ -2282,7 +2339,7 @@ REGLAS:
                 container.innerHTML = `
                     <div class="card" style="max-width:500px;margin:0 auto;text-align:center;padding:30px 20px;">
                         <div style="font-size:32px;font-weight:700;color:var(--dark);">${esJeroglifico ? hanzi : frase.original}</div>
-                        ${frase.pinyinCompleto ? `<div style="font-size:16px;color:var(--gray-light);margin-top:4px;">🔊 ${frase.pinyinCompleto}</div>` : ''}
+                        ${frase.pinyinCompleto && (!esJeroglifico || this._mostrarPinyin) ? `<div style="font-size:16px;color:var(--gray-light);margin-top:4px;">🔊 ${frase.pinyinCompleto}</div>` : ''}
                         <div style="font-size:18px;color:var(--gray);margin-top:8px;">→ ${frase.traduccion}</div>
                         <button class="btn-primary" onclick="window.UIStudy.cargar(window.UIStudy.core)" style="margin-top:16px;padding:8px 20px;">
                             <i class="fas fa-sync"></i> Recargar
